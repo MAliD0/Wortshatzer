@@ -7,7 +7,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <RootNamespace>Wortshatzer</RootNamespace>
     <AssemblyName>Wortshatzer</AssemblyName>
-    <DefaultItemExcludes>$(DefaultItemExcludes);src\**\*</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);src\**\*;tests\**\*</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
