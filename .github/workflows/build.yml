@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -29,3 +29,6 @@ jobs:
 
       - name: Build
         run: dotnet build Wortshatzer.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet run --project tests/Wortshatzer.Tests/Wortshatzer.Tests.csproj --configuration Release --no-build
