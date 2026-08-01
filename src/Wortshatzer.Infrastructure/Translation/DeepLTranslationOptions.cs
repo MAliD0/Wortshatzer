@@ -34,7 +34,7 @@ public sealed class DeepLTranslationOptions
         var value = uri.AbsoluteUri;
 
         return value.EndsWith(
-            '/',
+            "/",
             StringComparison.Ordinal)
                 ? uri
                 : new Uri($"{value}/");
