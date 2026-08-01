@@ -1,14 +1,18 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Wortshatzer.Core.Capture;
 using Wortshatzer.Core.Languages;
 using Wortshatzer.Core.Translation;
 using Wortshatzer.Core.Words;
 
 namespace Wortshatzer.ViewModels;
 
-public partial class MainWindowViewModel : ViewModelBase
+public partial class MainWindowViewModel : ViewModelBase, IDisposable
 {
     private readonly ITranslationService _translationService;
+    private readonly ITextCaptureService _textCaptureService;
+    private CancellationTokenSource? _capturedTranslationCancellation;
+    private bool _isDisposed;
 
     [ObservableProperty]
     private Language? _selectedSourceLanguage;
@@ -32,6 +36,12 @@ public partial class MainWindowViewModel : ViewModelBase
     private string _statusMessage = "Enter a word to translate.";
 
     [ObservableProperty]
+    private string _captureStatus = "Clipboard monitoring is off.";
+
+    [ObservableProperty]
+    private bool _isClipboardCaptureEnabled;
+
+    [ObservableProperty]
     private bool _isTranslating;
 
     [ObservableProperty]
@@ -43,15 +53,22 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _showEmptyState = true;
 
+    public event Action<WordTranslation>? TranslationReady;
+
     public IReadOnlyList<Language> Languages { get; }
 
     public IAsyncRelayCommand TranslateCommand { get; }
 
-    public MainWindowViewModel(ITranslationService translationService)
+    public MainWindowViewModel(
+        ITranslationService translationService,
+        ITextCaptureService textCaptureService)
     {
         ArgumentNullException.ThrowIfNull(translationService);
+        ArgumentNullException.ThrowIfNull(textCaptureService);
 
         _translationService = translationService;
+        _textCaptureService = textCaptureService;
+        _textCaptureService.TextCaptured += OnTextCaptured;
 
         Languages =
         [
@@ -70,6 +87,20 @@ public partial class MainWindowViewModel : ViewModelBase
         CapturedText = "vielleicht";
     }
 
+    public void Dispose()
+    {
+        if (_isDisposed)
+        {
+            return;
+        }
+
+        _capturedTranslationCancellation?.Cancel();
+        _capturedTranslationCancellation?.Dispose();
+        _textCaptureService.TextCaptured -= OnTextCaptured;
+        _textCaptureService.Dispose();
+        _isDisposed = true;
+    }
+
     private bool CanTranslate()
     {
         return !IsTranslating
@@ -79,11 +110,26 @@ public partial class MainWindowViewModel : ViewModelBase
             && SelectedSourceLanguage.Code != SelectedTargetLanguage.Code;
     }
 
-    private async Task TranslateAsync(CancellationToken cancellationToken)
+    private Task TranslateAsync(CancellationToken cancellationToken)
     {
-        if (!CanTranslate()
-            || SelectedSourceLanguage is null
-            || SelectedTargetLanguage is null)
+        return TranslateTextAsync(
+            CapturedText,
+            showPopup: false,
+            cancellationToken);
+    }
+
+    private async Task TranslateTextAsync(
+        string text,
+        bool showPopup,
+        CancellationToken cancellationToken)
+    {
+        var sourceLanguage = SelectedSourceLanguage;
+        var targetLanguage = SelectedTargetLanguage;
+
+        if (string.IsNullOrWhiteSpace(text)
+            || sourceLanguage is null
+            || targetLanguage is null
+            || sourceLanguage.Code == targetLanguage.Code)
         {
             return;
         }
@@ -92,16 +138,18 @@ public partial class MainWindowViewModel : ViewModelBase
         HasTranslation = false;
         HasError = false;
         ShowEmptyState = true;
-        StatusMessage = "Translating…";
+        StatusMessage = showPopup
+            ? $"Captured '{text}' from the clipboard. Translating…"
+            : "Translating…";
 
         try
         {
             var languagePair = new LanguagePair(
-                SelectedSourceLanguage,
-                SelectedTargetLanguage);
+                sourceLanguage,
+                targetLanguage);
 
             var capturedWord = new CapturedWord(
-                CapturedText,
+                text,
                 languagePair);
 
             var translation = await _translationService.TranslateAsync(
@@ -115,7 +163,14 @@ public partial class MainWindowViewModel : ViewModelBase
 
             HasTranslation = true;
             ShowEmptyState = false;
-            StatusMessage = "Translation ready.";
+            StatusMessage = showPopup
+                ? "Clipboard word translated."
+                : "Translation ready.";
+
+            if (showPopup)
+            {
+                TranslationReady?.Invoke(translation);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -140,6 +195,29 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    private void OnTextCaptured(
+        object? sender,
+        TextCapturedEventArgs eventArgs)
+    {
+        if (!IsClipboardCaptureEnabled)
+        {
+            return;
+        }
+
+        _capturedTranslationCancellation?.Cancel();
+        _capturedTranslationCancellation?.Dispose();
+        _capturedTranslationCancellation =
+            new CancellationTokenSource();
+
+        CapturedText = eventArgs.Text;
+        CaptureStatus = $"Captured: {eventArgs.Text}";
+
+        _ = TranslateTextAsync(
+            eventArgs.Text,
+            showPopup: true,
+            _capturedTranslationCancellation.Token);
+    }
+
     partial void OnCapturedTextChanged(string value)
     {
         OnTranslationInputChanged();
@@ -153,6 +231,21 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnSelectedTargetLanguageChanged(Language? value)
     {
         OnTranslationInputChanged();
+    }
+
+    partial void OnIsClipboardCaptureEnabledChanged(bool value)
+    {
+        if (value)
+        {
+            _textCaptureService.Start();
+            CaptureStatus =
+                "Monitoring clipboard. Copy a word or a phrase up to three words.";
+        }
+        else
+        {
+            _textCaptureService.Stop();
+            CaptureStatus = "Clipboard monitoring is off.";
+        }
     }
 
     partial void OnIsTranslatingChanged(bool value)
