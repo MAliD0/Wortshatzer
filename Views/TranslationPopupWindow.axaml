@@ -11,7 +11,7 @@
     ShowInTaskbar="False"
     ShowActivated="False"
     Topmost="True"
-    SystemDecorations="None"
+    WindowDecorations="None"
     WindowStartupLocation="CenterScreen"
     Background="#172033"
     CornerRadius="16">
