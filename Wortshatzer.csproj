@@ -6,6 +6,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <RootNamespace>Wortshatzer</RootNamespace>
     <AssemblyName>Wortshatzer</AssemblyName>
+    <DefaultItemExcludes>$(DefaultItemExcludes);src\**\*</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,5 +24,10 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="src\Wortshatzer.Core\Wortshatzer.Core.csproj" />
+    <ProjectReference Include="src\Wortshatzer.Infrastructure\Wortshatzer.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

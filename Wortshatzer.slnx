@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Wortshatzer.Core/Wortshatzer.Core.csproj" />
+    <Project Path="src/Wortshatzer.Infrastructure/Wortshatzer.Infrastructure.csproj" />
+  </Folder>
+  <Project Path="Wortshatzer.csproj" />
+</Solution>
