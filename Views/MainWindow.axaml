@@ -1,0 +1,52 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:GetStartedApp.ViewModels"
+    x:Class="GetStartedApp.Views.MainWindow"
+    x:DataType="vm:MainWindowViewModel"
+    Title="Profile Settings">
+
+    <StackPanel
+        Grid.Row="1"
+        Grid.Column="1"
+        Spacing="4">
+
+        <TextBox
+            x:Name="NameTextBox"
+            PlaceholderText="Enter your name"
+            Text="{Binding Name, Mode=TwoWay}"/>
+
+        <TextBlock
+            Text="{Binding Name}"
+            FontSize="12"
+            Foreground="Gray"/>
+
+        <TextBox
+            x:Name="EmailTextBox"
+            PlaceholderText="name@example.com"
+            Text="{Binding Email}"/>
+        <NumericUpDown
+            x:Name="AgeInput"
+            Minimum="1"
+            Maximum="120"
+            Value="{Binding Age, Mode= TwoWay}"
+            />
+
+        <ComboBox
+            x:Name="ThemeComboBox"
+            SelectedIndex="{Binding SelectedThemeIndex, Mode= TwoWay}"
+            />
+
+        <CheckBox
+            x:Name="NotificationCheckBox"
+            Content="Enable desktop notifications"
+            IsChecked="{Binding NotificationsEnabled, Mode= TwoWay}"
+        />
+
+        <TextBlock
+            Text="{Binding Greeting}"
+        />
+            
+    </StackPanel>
+
+</Window>
