@@ -1,0 +1,80 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Wortshatzer.ViewModels"
+    x:Class="Wortshatzer.Views.TranslationPopupWindow"
+    x:DataType="vm:TranslationPopupViewModel"
+    Title="Wortshatzer translation"
+    Width="380"
+    Height="190"
+    CanResize="False"
+    ShowInTaskbar="False"
+    ShowActivated="False"
+    Topmost="True"
+    SystemDecorations="None"
+    WindowStartupLocation="CenterScreen"
+    Background="#172033"
+    CornerRadius="16">
+
+    <Border
+        Padding="20"
+        BorderBrush="#3A465C"
+        BorderThickness="1"
+        CornerRadius="16">
+        <Grid RowDefinitions="Auto,*">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Spacing="2">
+                    <TextBlock
+                        Text="Wortshatzer"
+                        FontSize="13"
+                        FontWeight="SemiBold"
+                        Foreground="#AEB9CD"/>
+                    <TextBlock
+                        Text="{Binding Direction}"
+                        FontSize="11"
+                        Foreground="#7F8CA3"/>
+                </StackPanel>
+
+                <Button
+                    Grid.Column="1"
+                    Content="×"
+                    Click="DismissButton_OnClick"
+                    Padding="8,2"
+                    Background="Transparent"
+                    Foreground="#AEB9CD"
+                    FontSize="18"/>
+            </Grid>
+
+            <Grid
+                Grid.Row="1"
+                Margin="0,18,0,0"
+                ColumnDefinitions="*,Auto,*">
+                <TextBlock
+                    Text="{Binding SourceText}"
+                    VerticalAlignment="Center"
+                    TextAlignment="Center"
+                    TextWrapping="Wrap"
+                    FontSize="20"
+                    Foreground="#B8C2D6"/>
+
+                <TextBlock
+                    Grid.Column="1"
+                    Margin="14,0"
+                    VerticalAlignment="Center"
+                    Text="→"
+                    FontSize="18"
+                    Foreground="#7C8AA3"/>
+
+                <TextBlock
+                    Grid.Column="2"
+                    Text="{Binding TranslatedText}"
+                    VerticalAlignment="Center"
+                    TextAlignment="Center"
+                    TextWrapping="Wrap"
+                    FontSize="26"
+                    FontWeight="Bold"
+                    Foreground="White"/>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>
