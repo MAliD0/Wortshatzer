@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Wortshatzer.Infrastructure.Translation;
@@ -20,9 +21,13 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var mainWindow = new MainWindow();
+            var clipboard = mainWindow.Clipboard
+                ?? throw new InvalidOperationException(
+                    "The desktop clipboard service is unavailable.");
+
             var translationService = new InMemoryTranslationService();
             var captureService =
-                new ClipboardCaptureService(mainWindow.Clipboard);
+                new ClipboardCaptureService(clipboard);
             var popupPresenter = new TranslationPopupPresenter();
             var viewModel = new MainWindowViewModel(
                 translationService,
