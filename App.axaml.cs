@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Wortshatzer.Infrastructure.Translation;
+using Wortshatzer.Services;
 using Wortshatzer.ViewModels;
 using Wortshatzer.Views;
 
@@ -18,12 +19,27 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            var mainWindow = new MainWindow();
             var translationService = new InMemoryTranslationService();
+            var captureService =
+                new ClipboardCaptureService(mainWindow.Clipboard);
+            var popupPresenter = new TranslationPopupPresenter();
+            var viewModel = new MainWindowViewModel(
+                translationService,
+                captureService);
 
-            desktop.MainWindow = new MainWindow
+            viewModel.TranslationReady += popupPresenter.Show;
+            mainWindow.DataContext = viewModel;
+
+            mainWindow.Closed += (_, _) =>
             {
-                DataContext = new MainWindowViewModel(translationService)
+                viewModel.TranslationReady -= popupPresenter.Show;
+                viewModel.Dispose();
+                popupPresenter.Dispose();
             };
+
+            desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
+            desktop.MainWindow = mainWindow;
         }
 
         base.OnFrameworkInitializationCompleted();
