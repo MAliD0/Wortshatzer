@@ -2,51 +2,235 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:Wortshatzer.ViewModels"
+    xmlns:languages="using:Wortshatzer.Core.Languages"
     x:Class="Wortshatzer.Views.MainWindow"
     x:DataType="vm:MainWindowViewModel"
-    Title="Profile Settings">
+    Title="Wortshatzer"
+    Width="920"
+    Height="610"
+    MinWidth="760"
+    MinHeight="520"
+    WindowStartupLocation="CenterScreen"
+    Background="#F3F5F9">
 
-    <StackPanel
-        Grid.Row="1"
-        Grid.Column="1"
-        Spacing="4">
+    <Grid RowDefinitions="Auto,*">
+        <Border
+            Background="#172033"
+            Padding="32,20">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Spacing="3">
+                    <TextBlock
+                        Text="Wortshatzer"
+                        FontSize="26"
+                        FontWeight="Bold"
+                        Foreground="White"/>
+                    <TextBlock
+                        Text="Capture a word. Understand it immediately."
+                        FontSize="14"
+                        Foreground="#B8C2D6"/>
+                </StackPanel>
 
-        <TextBox
-            x:Name="NameTextBox"
-            PlaceholderText="Enter your name"
-            Text="{Binding Name, Mode=TwoWay}"/>
+                <Border
+                    Grid.Column="1"
+                    Padding="12,6"
+                    VerticalAlignment="Center"
+                    Background="#273449"
+                    CornerRadius="14">
+                    <TextBlock
+                        Text="MVP · Demo dictionary"
+                        FontSize="12"
+                        Foreground="#D6DEED"/>
+                </Border>
+            </Grid>
+        </Border>
 
-        <TextBlock
-            Text="{Binding Name}"
-            FontSize="12"
-            Foreground="Gray"/>
+        <Grid
+            Grid.Row="1"
+            Margin="32"
+            ColumnDefinitions="*,24,*">
 
-        <TextBox
-            x:Name="EmailTextBox"
-            PlaceholderText="name@example.com"
-            Text="{Binding Email}"/>
-        <NumericUpDown
-            x:Name="AgeInput"
-            Minimum="1"
-            Maximum="120"
-            Value="{Binding Age, Mode= TwoWay}"
-            />
+            <Border
+                Padding="26"
+                Background="White"
+                BorderBrush="#DEE3EC"
+                BorderThickness="1"
+                CornerRadius="18">
+                <StackPanel Spacing="18">
+                    <StackPanel Spacing="5">
+                        <TextBlock
+                            Text="Translate a captured word"
+                            FontSize="21"
+                            FontWeight="SemiBold"
+                            Foreground="#172033"/>
+                        <TextBlock
+                            Text="Manual input is the first step. Clipboard capture comes next."
+                            TextWrapping="Wrap"
+                            Foreground="#667085"/>
+                    </StackPanel>
 
-        <ComboBox
-            x:Name="ThemeComboBox"
-            SelectedIndex="{Binding SelectedThemeIndex, Mode= TwoWay}"
-            />
+                    <Grid ColumnDefinitions="*,16,*">
+                        <StackPanel Spacing="7">
+                            <TextBlock
+                                Text="From"
+                                FontWeight="SemiBold"
+                                Foreground="#344054"/>
+                            <ComboBox
+                                ItemsSource="{Binding Languages}"
+                                SelectedItem="{Binding SelectedSourceLanguage, Mode=TwoWay}"
+                                HorizontalContentAlignment="Stretch">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="languages:Language">
+                                        <TextBlock Text="{Binding DisplayName}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
 
-        <CheckBox
-            x:Name="NotificationCheckBox"
-            Content="Enable desktop notifications"
-            IsChecked="{Binding NotificationsEnabled, Mode= TwoWay}"
-        />
+                        <StackPanel
+                            Grid.Column="2"
+                            Spacing="7">
+                            <TextBlock
+                                Text="To"
+                                FontWeight="SemiBold"
+                                Foreground="#344054"/>
+                            <ComboBox
+                                ItemsSource="{Binding Languages}"
+                                SelectedItem="{Binding SelectedTargetLanguage, Mode=TwoWay}"
+                                HorizontalContentAlignment="Stretch">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="languages:Language">
+                                        <TextBlock Text="{Binding DisplayName}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                    </Grid>
 
-        <TextBlock
-            Text="{Binding Greeting}"
-        />
-            
-    </StackPanel>
+                    <StackPanel Spacing="7">
+                        <TextBlock
+                            Text="Captured word"
+                            FontWeight="SemiBold"
+                            Foreground="#344054"/>
+                        <TextBox
+                            Text="{Binding CapturedText, Mode=TwoWay}"
+                            Watermark="For example: vielleicht"
+                            FontSize="18"
+                            Padding="13,10"/>
+                    </StackPanel>
 
+                    <Button
+                        Content="Translate"
+                        Command="{Binding TranslateCommand}"
+                        Height="44"
+                        HorizontalContentAlignment="Center"
+                        IsDefault="True"
+                        Background="#4F46E5"
+                        Foreground="White"
+                        FontWeight="SemiBold"/>
+
+                    <ProgressBar
+                        IsVisible="{Binding IsTranslating}"
+                        IsIndeterminate="True"
+                        Height="3"/>
+
+                    <TextBlock
+                        Text="{Binding StatusMessage}"
+                        TextWrapping="Wrap"
+                        FontSize="13"
+                        Foreground="#667085"/>
+                </StackPanel>
+            </Border>
+
+            <Border
+                Grid.Column="2"
+                Padding="26"
+                Background="#172033"
+                CornerRadius="18">
+                <Grid RowDefinitions="Auto,*">
+                    <StackPanel Spacing="5">
+                        <TextBlock
+                            Text="Quick result"
+                            FontSize="21"
+                            FontWeight="SemiBold"
+                            Foreground="White"/>
+                        <TextBlock
+                            Text="This area becomes the floating popup later."
+                            TextWrapping="Wrap"
+                            Foreground="#AEB9CD"/>
+                    </StackPanel>
+
+                    <Grid
+                        Grid.Row="1"
+                        Margin="0,24,0,0">
+
+                        <StackPanel
+                            IsVisible="{Binding ShowEmptyState}"
+                            VerticalAlignment="Center"
+                            Spacing="10">
+                            <TextBlock
+                                Text="Translation will appear here"
+                                HorizontalAlignment="Center"
+                                FontSize="17"
+                                FontWeight="SemiBold"
+                                Foreground="#E6EAF2"/>
+                            <TextBlock
+                                Text="{Binding StatusMessage}"
+                                HorizontalAlignment="Center"
+                                TextAlignment="Center"
+                                TextWrapping="Wrap"
+                                Foreground="#98A5BC"/>
+                        </StackPanel>
+
+                        <StackPanel
+                            IsVisible="{Binding HasTranslation}"
+                            VerticalAlignment="Center"
+                            Spacing="16">
+                            <TextBlock
+                                Text="{Binding TranslationDirection}"
+                                FontSize="13"
+                                Foreground="#AEB9CD"/>
+                            <Border
+                                Padding="20"
+                                Background="#222D42"
+                                CornerRadius="14">
+                                <StackPanel Spacing="13">
+                                    <TextBlock
+                                        Text="{Binding TranslatedSourceText}"
+                                        FontSize="18"
+                                        Foreground="#B8C2D6"/>
+                                    <Border
+                                        Height="1"
+                                        Background="#3A465C"/>
+                                    <TextBlock
+                                        Text="{Binding TranslatedText}"
+                                        FontSize="34"
+                                        FontWeight="Bold"
+                                        TextWrapping="Wrap"
+                                        Foreground="White"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel
+                            IsVisible="{Binding HasError}"
+                            VerticalAlignment="Center"
+                            Spacing="10">
+                            <TextBlock
+                                Text="Translation unavailable"
+                                HorizontalAlignment="Center"
+                                FontSize="18"
+                                FontWeight="SemiBold"
+                                Foreground="#FCA5A5"/>
+                            <TextBlock
+                                Text="{Binding StatusMessage}"
+                                HorizontalAlignment="Center"
+                                TextAlignment="Center"
+                                TextWrapping="Wrap"
+                                Foreground="#D8DEE9"/>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
 </Window>
