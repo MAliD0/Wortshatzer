@@ -57,6 +57,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public IReadOnlyList<Language> Languages { get; }
 
+    public string TranslationProviderName =>
+        _translationService.ProviderName;
+
     public IAsyncRelayCommand TranslateCommand { get; }
 
     public MainWindowViewModel(
@@ -177,7 +180,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             ShowEmptyState = true;
             StatusMessage = "Translation cancelled.";
         }
-        catch (InvalidOperationException exception)
+        catch (TranslationException exception)
         {
             HasError = true;
             ShowEmptyState = false;
