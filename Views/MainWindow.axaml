@@ -6,10 +6,10 @@
     x:Class="Wortshatzer.Views.MainWindow"
     x:DataType="vm:MainWindowViewModel"
     Title="Wortshatzer"
-    Width="920"
-    Height="610"
-    MinWidth="760"
-    MinHeight="520"
+    Width="960"
+    Height="680"
+    MinWidth="800"
+    MinHeight="600"
     WindowStartupLocation="CenterScreen"
     Background="#F3F5F9">
 
@@ -37,7 +37,7 @@
                     Background="#273449"
                     CornerRadius="14">
                     <TextBlock
-                        Text="MVP · Demo dictionary"
+                        Text="MVP · Clipboard capture"
                         FontSize="12"
                         Foreground="#D6DEED"/>
                 </Border>
@@ -55,7 +55,7 @@
                 BorderBrush="#DEE3EC"
                 BorderThickness="1"
                 CornerRadius="18">
-                <StackPanel Spacing="18">
+                <StackPanel Spacing="17">
                     <StackPanel Spacing="5">
                         <TextBlock
                             Text="Translate a captured word"
@@ -63,10 +63,31 @@
                             FontWeight="SemiBold"
                             Foreground="#172033"/>
                         <TextBlock
-                            Text="Manual input is the first step. Clipboard capture comes next."
+                            Text="Enter text manually or monitor the clipboard for new words."
                             TextWrapping="Wrap"
                             Foreground="#667085"/>
                     </StackPanel>
+
+                    <Border
+                        Padding="14"
+                        Background="#EEF2FF"
+                        BorderBrush="#C7D2FE"
+                        BorderThickness="1"
+                        CornerRadius="12">
+                        <StackPanel Spacing="5">
+                            <CheckBox
+                                Content="Monitor clipboard"
+                                IsChecked="{Binding IsClipboardCaptureEnabled, Mode=TwoWay}"
+                                FontWeight="SemiBold"
+                                Foreground="#3730A3"/>
+                            <TextBlock
+                                Margin="26,0,0,0"
+                                Text="{Binding CaptureStatus}"
+                                TextWrapping="Wrap"
+                                FontSize="12"
+                                Foreground="#4F5F8F"/>
+                        </StackPanel>
+                    </Border>
 
                     <Grid ColumnDefinitions="*,16,*">
                         <StackPanel Spacing="7">
@@ -108,7 +129,7 @@
 
                     <StackPanel Spacing="7">
                         <TextBlock
-                            Text="Captured word"
+                            Text="Captured word or short phrase"
                             FontWeight="SemiBold"
                             Foreground="#344054"/>
                         <TextBox
@@ -154,7 +175,7 @@
                             FontWeight="SemiBold"
                             Foreground="White"/>
                         <TextBlock
-                            Text="This area becomes the floating popup later."
+                            Text="Clipboard translations also appear in a floating popup."
                             TextWrapping="Wrap"
                             Foreground="#AEB9CD"/>
                     </StackPanel>
