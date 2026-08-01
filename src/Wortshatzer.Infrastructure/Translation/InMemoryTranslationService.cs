@@ -21,6 +21,8 @@ public sealed class InMemoryTranslationService : ITranslationService
         [("ru", "en", "дом")] = "house"
     };
 
+    public string ProviderName => "Demo dictionary";
+
     public Task<WordTranslation> TranslateAsync(
         CapturedWord capturedWord,
         CancellationToken cancellationToken = default)
@@ -35,10 +37,11 @@ public sealed class InMemoryTranslationService : ITranslationService
 
         if (!_translations.TryGetValue(key, out var translatedText))
         {
-            throw new InvalidOperationException(
+            throw new TranslationException(
                 $"The demo dictionary does not contain a translation for '{capturedWord.Text}' " +
                 $"from {capturedWord.LanguagePair.Source.DisplayName} " +
-                $"to {capturedWord.LanguagePair.Target.DisplayName}.");
+                $"to {capturedWord.LanguagePair.Target.DisplayName}. " +
+                "Configure a DeepL API key to translate arbitrary text.");
         }
 
         return Task.FromResult(new WordTranslation(capturedWord, translatedText));
