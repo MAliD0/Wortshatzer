@@ -2,7 +2,7 @@ using System;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 
-namespace GetStartedApp.Views;
+namespace Wortshatzer.Views;
 
 public partial class MainWindow : Window
 {

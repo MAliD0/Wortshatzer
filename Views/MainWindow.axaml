@@ -1,8 +1,8 @@
 <Window
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:vm="using:GetStartedApp.ViewModels"
-    x:Class="GetStartedApp.Views.MainWindow"
+    xmlns:vm="using:Wortshatzer.ViewModels"
+    x:Class="Wortshatzer.Views.MainWindow"
     x:DataType="vm:MainWindowViewModel"
     Title="Profile Settings">
 

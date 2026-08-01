@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace GetStartedApp.ViewModels;
+namespace Wortshatzer.ViewModels;
 
 public abstract class ViewModelBase : ObservableObject
 {

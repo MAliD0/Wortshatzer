@@ -1,10 +1,10 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using GetStartedApp.ViewModels;
-using GetStartedApp.Views;
+using Wortshatzer.ViewModels;
+using Wortshatzer.Views;
 
-namespace GetStartedApp;
+namespace Wortshatzer;
 
 public partial class App : Application
 {

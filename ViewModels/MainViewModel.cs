@@ -1,4 +1,4 @@
-namespace GetStartedApp.ViewModels;
+namespace Wortshatzer.ViewModels;
 
 using System.ComponentModel;
 using System.Runtime.CompilerServices;

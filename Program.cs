@@ -1,7 +1,7 @@
 ﻿using Avalonia;
 using System;
 
-namespace GetStartedApp;
+namespace Wortshatzer;
 
 sealed class Program
 {
