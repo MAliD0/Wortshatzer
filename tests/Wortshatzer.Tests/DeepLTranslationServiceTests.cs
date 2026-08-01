@@ -42,7 +42,8 @@ public sealed class DeepLTranslationServiceTests
             options);
 
         var translation = await service.TranslateAsync(
-            CreateCapturedWord("vielleicht", "de", "en"));
+            CreateCapturedWord("vielleicht", "de", "en"),
+            TestContext.Current.CancellationToken);
 
         Assert.Equal("DeepL-Auth-Key test-key", authorizationHeader);
         Assert.Contains(
@@ -74,7 +75,8 @@ public sealed class DeepLTranslationServiceTests
 
         var exception = await Assert.ThrowsAsync<TranslationException>(
             () => service.TranslateAsync(
-                CreateCapturedWord("vielleicht", "de", "en")));
+                CreateCapturedWord("vielleicht", "de", "en"),
+                TestContext.Current.CancellationToken));
 
         Assert.Contains("API key", exception.Message);
     }
