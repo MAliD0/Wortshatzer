@@ -141,7 +141,7 @@
                             Foreground="#344054"/>
                         <TextBox
                             Text="{Binding CapturedText, Mode=TwoWay}"
-                            Watermark="For example: vielleicht"
+                            PlaceholderText="For example: vielleicht"
                             FontSize="18"
                             Padding="13,10"/>
                     </StackPanel>
