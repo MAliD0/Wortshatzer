@@ -37,7 +37,11 @@ public sealed class JsonScraperProfileStoreTests
                         ".level",
                         customFieldName: "Difficulty")
                 ],
-                ".entry");
+                ".entry",
+                new ScraperSuggestionRule(
+                    ".suggestions a",
+                    [".alternative-spellings a"],
+                    "https://dictionary.test/spellcheck/?q={word}"));
 
             await store.SaveAsync(
                 [profile],
@@ -51,6 +55,13 @@ public sealed class JsonScraperProfileStoreTests
                 profile.SearchUrlTemplate,
                 restored.SearchUrlTemplate);
             Assert.Equal(".entry", restored.EntrySelector);
+            Assert.NotNull(restored.SuggestionRule);
+            Assert.Equal(
+                "https://dictionary.test/spellcheck/?q={word}",
+                restored.SuggestionRule.SearchUrlTemplate);
+            Assert.Equal(
+                [".alternative-spellings a"],
+                restored.SuggestionRule.FallbackSelectors);
             Assert.Equal(2, restored.Fields.Count);
             Assert.Equal(
                 [".old-translation"],
