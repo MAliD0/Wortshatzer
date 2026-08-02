@@ -1,0 +1,407 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Wortshatzer.ViewModels"
+    x:Class="Wortshatzer.Views.ScraperSettingsWindow"
+    x:DataType="vm:ScraperSettingsViewModel"
+    Title="Dictionary scraper settings"
+    Width="1220"
+    Height="780"
+    MinWidth="980"
+    MinHeight="680"
+    WindowStartupLocation="CenterOwner"
+    Background="#F3F5F9">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border
+            Padding="28,18"
+            Background="#172033">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Spacing="3">
+                    <TextBlock
+                        Text="Dictionary scraper profiles"
+                        FontSize="24"
+                        FontWeight="Bold"
+                        Foreground="White"/>
+                    <TextBlock
+                        Text="Choose exactly which fields and CSS selectors Wortshatzer extracts."
+                        Foreground="#B8C2D6"/>
+                </StackPanel>
+
+                <TextBlock
+                    Grid.Column="1"
+                    Text="{Binding StatusMessage}"
+                    MaxWidth="470"
+                    VerticalAlignment="Center"
+                    TextAlignment="Right"
+                    TextWrapping="Wrap"
+                    FontSize="12"
+                    Foreground="#CBD5E1"/>
+            </Grid>
+        </Border>
+
+        <Grid
+            Grid.Row="1"
+            Margin="24"
+            ColumnDefinitions="230,18,*,18,320">
+
+            <Border
+                Padding="16"
+                Background="White"
+                BorderBrush="#DEE3EC"
+                BorderThickness="1"
+                CornerRadius="14">
+                <Grid RowDefinitions="Auto,*,Auto">
+                    <StackPanel Spacing="3">
+                        <TextBlock
+                            Text="Profiles"
+                            FontSize="18"
+                            FontWeight="SemiBold"
+                            Foreground="#172033"/>
+                        <TextBlock
+                            Text="Built-ins are protected."
+                            FontSize="12"
+                            Foreground="#667085"/>
+                    </StackPanel>
+
+                    <ListBox
+                        Grid.Row="1"
+                        Margin="0,14"
+                        ItemsSource="{Binding Profiles}"
+                        SelectedItem="{Binding SelectedProfile, Mode=TwoWay}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate
+                                x:DataType="vm:ScraperProfileListItem">
+                                <StackPanel Margin="4,7" Spacing="2">
+                                    <TextBlock
+                                        Text="{Binding DisplayName}"
+                                        TextWrapping="Wrap"
+                                        FontWeight="SemiBold"/>
+                                    <TextBlock
+                                        Text="{Binding Kind}"
+                                        FontSize="11"
+                                        Foreground="#667085"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <StackPanel Grid.Row="2" Spacing="8">
+                        <Button
+                            Content="New profile"
+                            Command="{Binding NewProfileCommand}"
+                            HorizontalContentAlignment="Center"/>
+                        <Button
+                            Content="Clone selected"
+                            Command="{Binding CloneProfileCommand}"
+                            HorizontalContentAlignment="Center"/>
+                        <Button
+                            Content="Delete custom"
+                            Command="{Binding DeleteProfileCommand}"
+                            HorizontalContentAlignment="Center"
+                            Foreground="#B42318"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Border
+                Grid.Column="2"
+                Padding="20"
+                Background="White"
+                BorderBrush="#DEE3EC"
+                BorderThickness="1"
+                CornerRadius="14">
+                <Grid RowDefinitions="Auto,*">
+                    <Grid
+                        ColumnDefinitions="*,12,110,12,110"
+                        RowDefinitions="Auto,12,Auto,12,Auto">
+                        <StackPanel Spacing="5">
+                            <TextBlock
+                                Text="Profile name"
+                                FontWeight="SemiBold"/>
+                            <TextBox
+                                Text="{Binding Name, Mode=TwoWay}"
+                                Watermark="My dictionary"/>
+                        </StackPanel>
+
+                        <StackPanel
+                            Grid.Column="2"
+                            Spacing="5">
+                            <TextBlock
+                                Text="Source"
+                                FontWeight="SemiBold"/>
+                            <TextBox
+                                Text="{Binding SourceLanguageCode, Mode=TwoWay}"
+                                Watermark="de"/>
+                        </StackPanel>
+
+                        <StackPanel
+                            Grid.Column="4"
+                            Spacing="5">
+                            <TextBlock
+                                Text="Target"
+                                FontWeight="SemiBold"/>
+                            <TextBox
+                                Text="{Binding TargetLanguageCode, Mode=TwoWay}"
+                                Watermark="en"/>
+                        </StackPanel>
+
+                        <StackPanel
+                            Grid.Row="2"
+                            Grid.ColumnSpan="5"
+                            Spacing="5">
+                            <TextBlock
+                                Text="Search URL template"
+                                FontWeight="SemiBold"/>
+                            <TextBox
+                                Text="{Binding SearchUrlTemplate, Mode=TwoWay}"
+                                Watermark="https://dictionary.example/{word}"/>
+                        </StackPanel>
+
+                        <StackPanel
+                            Grid.Row="4"
+                            Grid.ColumnSpan="5"
+                            Spacing="5">
+                            <TextBlock
+                                Text="Entry selector (optional)"
+                                FontWeight="SemiBold"/>
+                            <TextBox
+                                Text="{Binding EntrySelector, Mode=TwoWay}"
+                                Watermark=".entry"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid
+                        Grid.Row="1"
+                        Margin="0,20,0,0"
+                        RowDefinitions="Auto,*">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Spacing="2">
+                                <TextBlock
+                                    Text="Extraction fields"
+                                    FontSize="17"
+                                    FontWeight="SemiBold"
+                                    Foreground="#172033"/>
+                                <TextBlock
+                                    Text="Fallback selectors: one CSS selector per line."
+                                    FontSize="11"
+                                    Foreground="#667085"/>
+                            </StackPanel>
+
+                            <Button
+                                Grid.Column="1"
+                                Content="+ Add field"
+                                Command="{Binding AddRuleCommand}"
+                                Padding="14,7"
+                                Background="#EEF2FF"
+                                Foreground="#3730A3"/>
+                        </Grid>
+
+                        <ScrollViewer
+                            Grid.Row="1"
+                            Margin="0,12,0,0">
+                            <ItemsControl ItemsSource="{Binding Rules}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate
+                                        x:DataType="vm:ScraperRuleEditorViewModel">
+                                        <Border
+                                            Margin="0,0,0,12"
+                                            Padding="14"
+                                            Background="#F8FAFC"
+                                            BorderBrush="#E2E8F0"
+                                            BorderThickness="1"
+                                            CornerRadius="10">
+                                            <Grid
+                                                ColumnDefinitions="150,12,*,12,120"
+                                                RowDefinitions="Auto,10,Auto,10,Auto">
+                                                <StackPanel Spacing="4">
+                                                    <TextBlock
+                                                        Text="Field"
+                                                        FontSize="11"
+                                                        Foreground="#667085"/>
+                                                    <ComboBox
+                                                        ItemsSource="{Binding AvailableFields}"
+                                                        SelectedItem="{Binding Field, Mode=TwoWay}"/>
+                                                </StackPanel>
+
+                                                <StackPanel
+                                                    Grid.Column="2"
+                                                    Spacing="4">
+                                                    <TextBlock
+                                                        Text="CSS selector"
+                                                        FontSize="11"
+                                                        Foreground="#667085"/>
+                                                    <TextBox
+                                                        Text="{Binding Selector, Mode=TwoWay}"
+                                                        Watermark=".translation"/>
+                                                </StackPanel>
+
+                                                <StackPanel
+                                                    Grid.Column="4"
+                                                    Spacing="4">
+                                                    <TextBlock
+                                                        Text="Maximum"
+                                                        FontSize="11"
+                                                        Foreground="#667085"/>
+                                                    <TextBox
+                                                        Text="{Binding MaximumResults, Mode=TwoWay}"/>
+                                                </StackPanel>
+
+                                                <StackPanel
+                                                    Grid.Row="2"
+                                                    Grid.ColumnSpan="3"
+                                                    Spacing="4">
+                                                    <TextBlock
+                                                        Text="Fallback selectors"
+                                                        FontSize="11"
+                                                        Foreground="#667085"/>
+                                                    <TextBox
+                                                        Text="{Binding FallbackSelectorsText, Mode=TwoWay}"
+                                                        AcceptsReturn="True"
+                                                        MinHeight="56"
+                                                        Watermark=".old-selector"/>
+                                                </StackPanel>
+
+                                                <StackPanel
+                                                    Grid.Row="2"
+                                                    Grid.Column="4"
+                                                    Spacing="4">
+                                                    <TextBlock
+                                                        Text="Value source"
+                                                        FontSize="11"
+                                                        Foreground="#667085"/>
+                                                    <ComboBox
+                                                        ItemsSource="{Binding AvailableValueSources}"
+                                                        SelectedItem="{Binding ValueSource, Mode=TwoWay}"/>
+                                                    <TextBox
+                                                        Text="{Binding AttributeName, Mode=TwoWay}"
+                                                        Watermark="Attribute name"/>
+                                                </StackPanel>
+
+                                                <Grid
+                                                    Grid.Row="4"
+                                                    Grid.ColumnSpan="5"
+                                                    ColumnDefinitions="160,12,*,12,Auto">
+                                                    <StackPanel Spacing="4">
+                                                        <TextBlock
+                                                            Text="Result mode"
+                                                            FontSize="11"
+                                                            Foreground="#667085"/>
+                                                        <ComboBox
+                                                            ItemsSource="{Binding AvailableResultModes}"
+                                                            SelectedItem="{Binding ResultMode, Mode=TwoWay}"/>
+                                                    </StackPanel>
+
+                                                    <TextBox
+                                                        Grid.Column="2"
+                                                        Text="{Binding CustomFieldName, Mode=TwoWay}"
+                                                        VerticalAlignment="Bottom"
+                                                        Watermark="Custom field name"/>
+                                                    
+                                                    <StackPanel
+                                                        Grid.Column="4"
+                                                        VerticalAlignment="Bottom"
+                                                        Orientation="Horizontal"
+                                                        Spacing="10">
+                                                        <CheckBox
+                                                            Content="Required"
+                                                            IsChecked="{Binding IsRequired, Mode=TwoWay}"/>
+                                                        <CheckBox
+                                                            Content="Deduplicate"
+                                                            IsChecked="{Binding RemoveDuplicates, Mode=TwoWay}"/>
+                                                        <Button
+                                                            Content="Remove"
+                                                            Command="{Binding RemoveCommand}"
+                                                            Foreground="#B42318"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <Border
+                Grid.Column="4"
+                Padding="18"
+                Background="#172033"
+                CornerRadius="14">
+                <Grid RowDefinitions="Auto,Auto,*">
+                    <StackPanel Spacing="4">
+                        <TextBlock
+                            Text="Live preview"
+                            FontSize="18"
+                            FontWeight="SemiBold"
+                            Foreground="White"/>
+                        <TextBlock
+                            Text="Test the current unsaved configuration."
+                            TextWrapping="Wrap"
+                            FontSize="12"
+                            Foreground="#AEB9CD"/>
+                    </StackPanel>
+
+                    <Grid
+                        Grid.Row="1"
+                        Margin="0,16"
+                        ColumnDefinitions="*,10,Auto">
+                        <TextBox
+                            Text="{Binding TestWord, Mode=TwoWay}"
+                            Watermark="vielleicht"/>
+                        <Button
+                            Grid.Column="2"
+                            Content="Test profile"
+                            Command="{Binding TestProfileCommand}"
+                            Background="#4F46E5"
+                            Foreground="White"/>
+                    </Grid>
+
+                    <Border
+                        Grid.Row="2"
+                        Padding="14"
+                        Background="#222D42"
+                        CornerRadius="10">
+                        <ScrollViewer>
+                            <TextBlock
+                                Text="{Binding PreviewText}"
+                                TextWrapping="Wrap"
+                                Foreground="#E6EAF2"/>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Border
+            Grid.Row="2"
+            Padding="24,14"
+            Background="White"
+            BorderBrush="#DEE3EC"
+            BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="*,Auto,12,Auto">
+                <ProgressBar
+                    Width="240"
+                    IsVisible="{Binding IsBusy}"
+                    IsIndeterminate="True"/>
+
+                <Button
+                    Grid.Column="1"
+                    Content="Save custom profile"
+                    Command="{Binding SaveProfileCommand}"
+                    Padding="18,9"
+                    Background="#4F46E5"
+                    Foreground="White"
+                    FontWeight="SemiBold"/>
+
+                <Button
+                    Grid.Column="3"
+                    Content="Close"
+                    Click="CloseButton_OnClick"
+                    Padding="18,9"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
