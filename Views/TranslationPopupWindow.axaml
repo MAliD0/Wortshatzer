@@ -5,8 +5,8 @@
     x:Class="Wortshatzer.Views.TranslationPopupWindow"
     x:DataType="vm:TranslationPopupViewModel"
     Title="Wortshatzer translation"
-    Width="380"
-    Height="190"
+    Width="420"
+    Height="300"
     CanResize="False"
     ShowInTaskbar="False"
     ShowActivated="False"
@@ -21,7 +21,7 @@
         BorderBrush="#3A465C"
         BorderThickness="1"
         CornerRadius="16">
-        <Grid RowDefinitions="Auto,Auto,*">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
             <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Spacing="2">
                     <TextBlock
@@ -47,14 +47,50 @@
 
             <Grid
                 Grid.Row="1"
-                Margin="0,18,0,0"
-                ColumnDefinitions="*,Auto,*">
+                Margin="0,14,0,0"
+                ColumnDefinitions="*,10,Auto">
+                <TextBox
+                    Text="{Binding InputText, Mode=TwoWay}"
+                    Watermark="Enter a word or short phrase"
+                    Padding="11,8"
+                    FontSize="15"/>
+                <Button
+                    Grid.Column="2"
+                    Content="Translate"
+                    Command="{Binding TranslateCommand}"
+                    IsDefault="True"
+                    Padding="14,8"
+                    Background="#4F46E5"
+                    Foreground="White"
+                    FontWeight="SemiBold"/>
+            </Grid>
+
+            <StackPanel
+                Grid.Row="2"
+                Margin="0,10,0,0"
+                Spacing="5">
+                <ProgressBar
+                    IsVisible="{Binding IsTranslating}"
+                    IsIndeterminate="True"
+                    Height="3"/>
+                <TextBlock
+                    Text="{Binding StatusMessage}"
+                    TextWrapping="Wrap"
+                    FontSize="11"
+                    Foreground="#93A0B8"/>
+            </StackPanel>
+
+            <Grid
+                Grid.Row="3"
+                Margin="0,16,0,0"
+                ColumnDefinitions="*,Auto,*"
+                IsVisible="{Binding HasTranslation}">
                 <TextBlock
                     Text="{Binding SourceText}"
                     VerticalAlignment="Center"
                     TextAlignment="Center"
                     TextWrapping="Wrap"
-                    FontSize="20"
+                    FontSize="18"
                     Foreground="#B8C2D6"/>
 
                 <TextBlock
@@ -71,14 +107,14 @@
                     VerticalAlignment="Center"
                     TextAlignment="Center"
                     TextWrapping="Wrap"
-                    FontSize="26"
+                    FontSize="24"
                     FontWeight="Bold"
                     Foreground="White"/>
             </Grid>
 
             <Border
-                Grid.Row="2"
-                Margin="0,18,0,0"
+                Grid.Row="4"
+                Margin="0,16,0,0"
                 Padding="12"
                 IsVisible="{Binding HasDictionaryDetails}"
                 Background="#222D42"
@@ -89,11 +125,12 @@
                         FontSize="11"
                         FontWeight="SemiBold"
                         Foreground="#8EA0BC"/>
-                    <TextBlock
-                        Text="{Binding DictionaryText}"
-                        TextWrapping="Wrap"
-                        MaxHeight="110"
-                        Foreground="#E6EAF2"/>
+                    <ScrollViewer MaxHeight="130">
+                        <TextBlock
+                            Text="{Binding DictionaryText}"
+                            TextWrapping="Wrap"
+                            Foreground="#E6EAF2"/>
+                    </ScrollViewer>
                 </StackPanel>
             </Border>
         </Grid>
