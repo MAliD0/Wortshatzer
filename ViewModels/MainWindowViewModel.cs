@@ -68,7 +68,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public IReadOnlyList<Language> Languages { get; }
 
     public string TranslationProviderName =>
-        _translationService.ProviderName;
+        ActiveTranslationService.ProviderName;
 
     public IAsyncRelayCommand TranslateCommand { get; }
 
@@ -331,7 +331,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                 text,
                 languagePair);
 
-            var translation = await _translationService.TranslateAsync(
+            var translation = await ActiveTranslationService.TranslateAsync(
                 capturedWord,
                 cancellationToken);
 
