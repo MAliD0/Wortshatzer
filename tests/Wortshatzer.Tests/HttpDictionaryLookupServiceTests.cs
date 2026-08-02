@@ -127,6 +127,87 @@ public sealed class HttpDictionaryLookupServiceTests
     }
 
     [Fact]
+    public async Task LookupAsync_FetchesConfiguredSuggestionPageAfterExtractionFailure()
+    {
+        var handler = new StubHandler(request =>
+        {
+            var path = request.RequestUri!.AbsolutePath;
+            var html = path switch
+            {
+                "/spellcheck/de-en/" =>
+                    """
+                    <main>
+                      <article class="entry">
+                        <h1>erreichen</h1>
+                        <span class="translation">reach</span>
+                      </article>
+                      <ul class="suggestions">
+                        <li>
+                          <a href="/dictionary/de-en/strategisch">
+                            strategisch
+                          </a>
+                        </li>
+                      </ul>
+                    </main>
+                    """,
+                "/dictionary/de-en/strategisch" =>
+                    "<main><h1>strategisch</h1><span class='translation'>strategic</span></main>",
+                _ => "<main><p>No matching entry.</p></main>"
+            };
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    html,
+                    Encoding.UTF8,
+                    "text/html")
+            };
+        });
+        using var httpClient = new HttpClient(handler);
+        var profile = new ScraperProfile(
+            "Test dictionary",
+            "https://dictionary.test/dictionary/de-en/{word}",
+            "de",
+            "en",
+            [
+                new ScraperExtractionRule(
+                    DictionaryField.Headword,
+                    "h1",
+                    resultMode: ScraperResultMode.First,
+                    isRequired: true),
+                new ScraperExtractionRule(
+                    DictionaryField.Translation,
+                    ".translation",
+                    isRequired: true)
+            ],
+            "main",
+            new ScraperSuggestionRule(
+                ".suggestions a",
+                searchUrlTemplate:
+                    "https://dictionary.test/spellcheck/de-en/?q={word}"));
+        var service = new HttpDictionaryLookupService(
+            httpClient,
+            new AngleSharpScraperEngine());
+
+        var result = await service.LookupAsync(
+            profile,
+            "strategische",
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(3, handler.RequestCount);
+        Assert.Equal("strategische", result.Query);
+        Assert.Equal(
+            ["strategisch"],
+            result.GetValues(DictionaryField.Headword));
+        Assert.Equal(
+            ["strategic"],
+            result.GetValues(DictionaryField.Translation));
+        Assert.DoesNotContain(
+            "erreichen",
+            result.GetValues(DictionaryField.Headword));
+    }
+
+    [Fact]
     public async Task LookupAsync_UsesSuggestionBeforeUnrelatedSpellcheckEntry()
     {
         var handler = new StubHandler(request =>
@@ -232,6 +313,11 @@ public sealed class HttpDictionaryLookupServiceTests
             cambridge.Fields,
             field => field.Field == DictionaryField.Translation);
         Assert.NotNull(cambridge.SuggestionRule);
+        Assert.Equal(
+            "https://dictionary.cambridge.org/spellcheck/german-english/?q=vielleicht",
+            cambridge.SuggestionRule
+                .BuildSearchUri("vielleicht")!
+                .AbsoluteUri);
         Assert.Equal(
             "https://www.verbformen.de/?w=gehen",
             verbformen.BuildSearchUri("gehen").AbsoluteUri);
