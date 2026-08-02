@@ -113,12 +113,17 @@ public sealed class AngleSharpScraperEngineTests
         Assert.Contains("Translation", exception.Message);
     }
     [Fact]
-    public async Task ExtractFirstSuggestionAsync_UsesFirstSafeLink()
+    public async Task ExtractClosestSuggestionAsync_ChoosesNearestSafeLink()
     {
         const string suggestionHtml =
             """
             <main>
               <ul class="suggestions">
+                <li>
+                  <a href="/dictionary/german-english/vielfach">
+                    vielfach
+                  </a>
+                </li>
                 <li>
                   <a href="/dictionary/german-english/vielleicht">
                     vielleicht
@@ -148,8 +153,9 @@ public sealed class AngleSharpScraperEngineTests
         var engine = new AngleSharpScraperEngine();
 
         var suggestion =
-            await engine.ExtractFirstSuggestionAsync(
+            await engine.ExtractClosestSuggestionAsync(
                 profile,
+                "vieleicht",
                 suggestionHtml,
                 new Uri(
                     "https://dictionary.test/spellcheck?q=vieleicht"),
