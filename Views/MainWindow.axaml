@@ -7,9 +7,9 @@
     x:DataType="vm:MainWindowViewModel"
     Title="Wortshatzer"
     Width="960"
-    Height="680"
+    Height="700"
     MinWidth="800"
-    MinHeight="600"
+    MinHeight="620"
     WindowStartupLocation="CenterScreen"
     Background="#F3F5F9">
 
@@ -70,7 +70,7 @@
                             FontWeight="SemiBold"
                             Foreground="#172033"/>
                         <TextBlock
-                            Text="Enter text manually or monitor the clipboard for new words."
+                            Text="Enter text, monitor the clipboard, or use the global shortcut."
                             TextWrapping="Wrap"
                             Foreground="#667085"/>
                     </StackPanel>
@@ -90,6 +90,12 @@
                             <TextBlock
                                 Margin="26,0,0,0"
                                 Text="{Binding CaptureStatus}"
+                                TextWrapping="Wrap"
+                                FontSize="12"
+                                Foreground="#4F5F8F"/>
+                            <TextBlock
+                                Margin="26,2,0,0"
+                                Text="{Binding ShortcutStatus}"
                                 TextWrapping="Wrap"
                                 FontSize="12"
                                 Foreground="#4F5F8F"/>
@@ -182,7 +188,7 @@
                             FontWeight="SemiBold"
                             Foreground="White"/>
                         <TextBlock
-                            Text="Clipboard translations also appear in a floating popup."
+                            Text="Captured translations also appear in a floating popup."
                             TextWrapping="Wrap"
                             Foreground="#AEB9CD"/>
                     </StackPanel>
