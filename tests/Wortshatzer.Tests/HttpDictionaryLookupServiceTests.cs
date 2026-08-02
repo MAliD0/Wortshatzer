@@ -65,6 +65,68 @@ public sealed class HttpDictionaryLookupServiceTests
     }
 
     [Fact]
+    public async Task LookupAsync_RetriesFirstClosestSuggestion()
+    {
+        var handler = new StubHandler(request =>
+        {
+            var html = request.RequestUri!.AbsolutePath
+                .EndsWith(
+                    "/vielleicht",
+                    StringComparison.Ordinal)
+                ? "<main><h1>vielleicht</h1><span class='translation'>maybe</span></main>"
+                : "<main><ul class='suggestions'><li><a href='/dictionary/de-en/vielleicht'>vielleicht</a></li></ul></main>";
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    html,
+                    Encoding.UTF8,
+                    "text/html")
+            };
+        });
+        using var httpClient = new HttpClient(handler);
+        var profile = new ScraperProfile(
+            "Test dictionary",
+            "https://dictionary.test/dictionary/de-en/{word}",
+            "de",
+            "en",
+            [
+                new ScraperExtractionRule(
+                    DictionaryField.Headword,
+                    "h1",
+                    resultMode: ScraperResultMode.First,
+                    isRequired: true),
+                new ScraperExtractionRule(
+                    DictionaryField.Translation,
+                    ".translation",
+                    isRequired: true)
+            ],
+            "main",
+            new ScraperSuggestionRule(
+                ".suggestions a"));
+        var service = new HttpDictionaryLookupService(
+            httpClient,
+            new AngleSharpScraperEngine());
+
+        var result = await service.LookupAsync(
+            profile,
+            "vieleicht",
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, handler.RequestCount);
+        Assert.Equal("vieleicht", result.Query);
+        Assert.Equal(
+            ["vielleicht"],
+            result.GetValues(DictionaryField.Headword));
+        Assert.Equal(
+            ["maybe"],
+            result.GetValues(DictionaryField.Translation));
+        Assert.Equal(
+            "https://dictionary.test/dictionary/de-en/vielleicht",
+            result.SourceUri.AbsoluteUri);
+    }
+
+    [Fact]
     public void BuiltInProfiles_HaveSafeUrlsAndUsefulFields()
     {
         var cambridge =
@@ -78,6 +140,7 @@ public sealed class HttpDictionaryLookupServiceTests
         Assert.Contains(
             cambridge.Fields,
             field => field.Field == DictionaryField.Translation);
+        Assert.NotNull(cambridge.SuggestionRule);
         Assert.Equal(
             "https://www.verbformen.de/?w=gehen",
             verbformen.BuildSearchUri("gehen").AbsoluteUri);
