@@ -127,6 +127,97 @@ public sealed class HttpDictionaryLookupServiceTests
     }
 
     [Fact]
+    public async Task LookupAsync_UsesSuggestionBeforeUnrelatedSpellcheckEntry()
+    {
+        var handler = new StubHandler(request =>
+        {
+            if (request.RequestUri!.AbsolutePath.EndsWith(
+                    "/strategisch",
+                    StringComparison.Ordinal))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        "<main><h1>strategisch</h1><span class='translation'>strategic</span></main>",
+                        Encoding.UTF8,
+                        "text/html")
+                };
+            }
+
+            var spellcheckResponse =
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        """
+                        <main>
+                          <article class="entry">
+                            <h1>erreichen</h1>
+                            <span class="translation">reach</span>
+                          </article>
+                          <ul class="suggestions">
+                            <li>
+                              <a href="/dictionary/de-en/strategisch">
+                                strategisch
+                              </a>
+                            </li>
+                          </ul>
+                        </main>
+                        """,
+                        Encoding.UTF8,
+                        "text/html"),
+                    RequestMessage = new HttpRequestMessage(
+                        HttpMethod.Get,
+                        "https://dictionary.test/spellcheck/de-en/?q=strategische")
+                };
+
+            return spellcheckResponse;
+        });
+        using var httpClient = new HttpClient(handler);
+        var profile = new ScraperProfile(
+            "Test dictionary",
+            "https://dictionary.test/dictionary/de-en/{word}",
+            "de",
+            "en",
+            [
+                new ScraperExtractionRule(
+                    DictionaryField.Headword,
+                    "h1",
+                    resultMode: ScraperResultMode.First,
+                    isRequired: true),
+                new ScraperExtractionRule(
+                    DictionaryField.Translation,
+                    ".translation",
+                    isRequired: true)
+            ],
+            "main",
+            new ScraperSuggestionRule(
+                ".suggestions a"));
+        var service = new HttpDictionaryLookupService(
+            httpClient,
+            new AngleSharpScraperEngine());
+
+        var result = await service.LookupAsync(
+            profile,
+            "strategische",
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, handler.RequestCount);
+        Assert.Equal("strategische", result.Query);
+        Assert.Equal(
+            ["strategisch"],
+            result.GetValues(DictionaryField.Headword));
+        Assert.Equal(
+            ["strategic"],
+            result.GetValues(DictionaryField.Translation));
+        Assert.DoesNotContain(
+            "erreichen",
+            result.GetValues(DictionaryField.Headword));
+        Assert.Equal(
+            "https://dictionary.test/dictionary/de-en/strategisch",
+            result.SourceUri.AbsoluteUri);
+    }
+
+    [Fact]
     public void BuiltInProfiles_HaveSafeUrlsAndUsefulFields()
     {
         var cambridge =
