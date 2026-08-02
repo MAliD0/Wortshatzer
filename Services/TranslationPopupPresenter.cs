@@ -19,6 +19,8 @@ public sealed class TranslationPopupPresenter : IDisposable
     private TranslationPopupWindow? _window;
     private CancellationTokenSource? _dismissCancellation;
     private bool _isAlwaysVisible;
+    private bool _isAwaitingInput;
+    private bool _hasUserPositionedWindow;
     private bool _isDisposed;
 
     public event Action? AlwaysVisibleDisableRequested;
@@ -44,6 +46,7 @@ public sealed class TranslationPopupPresenter : IDisposable
 
         if (!isAlwaysVisible)
         {
+            _isAwaitingInput = false;
             _window?.Hide();
             return;
         }
@@ -58,13 +61,15 @@ public sealed class TranslationPopupPresenter : IDisposable
             window.Show();
         }
 
-        PositionNearWorkingAreaCorner(window);
+        PositionIfNeeded(window);
     }
 
     public void Show(WordTranslation translation)
     {
         ObjectDisposedException.ThrowIf(_isDisposed, this);
         ArgumentNullException.ThrowIfNull(translation);
+
+        _isAwaitingInput = false;
 
         var window = EnsureWindow();
         _viewModel.ApplyTranslation(translation);
@@ -75,8 +80,34 @@ public sealed class TranslationPopupPresenter : IDisposable
             window.Show();
         }
 
-        PositionNearWorkingAreaCorner(window);
+        PositionIfNeeded(window);
         RestartDismissTimer(window);
+    }
+
+    public void ShowInputCorrection(
+        string suggestedText,
+        string message)
+    {
+        ObjectDisposedException.ThrowIf(_isDisposed, this);
+        ArgumentNullException.ThrowIfNull(suggestedText);
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+
+        _isAwaitingInput = true;
+        CancelDismissTimer();
+
+        var window = EnsureWindow();
+        _viewModel.PrepareInputCorrection(
+            suggestedText,
+            message);
+        window.Height = CompactHeight;
+
+        if (!window.IsVisible)
+        {
+            window.Show();
+        }
+
+        PositionIfNeeded(window);
+        Dispatcher.UIThread.Post(window.FocusInput);
     }
 
     public void ShowDictionary(
@@ -103,7 +134,7 @@ public sealed class TranslationPopupPresenter : IDisposable
         }
 
         _window.Height = DictionaryHeight;
-        PositionNearWorkingAreaCorner(_window);
+        PositionIfNeeded(_window);
         RestartDismissTimer(_window);
     }
 
@@ -120,6 +151,8 @@ public sealed class TranslationPopupPresenter : IDisposable
         {
             _window.DismissRequested -=
                 OnDismissRequested;
+            _window.DragStarted -=
+                OnDragStarted;
             _window.Close();
         }
 
@@ -139,12 +172,15 @@ public sealed class TranslationPopupPresenter : IDisposable
             DataContext = _viewModel
         };
         _window.DismissRequested += OnDismissRequested;
+        _window.DragStarted += OnDragStarted;
 
         return _window;
     }
 
     private void OnDismissRequested()
     {
+        _isAwaitingInput = false;
+
         if (_isAlwaysVisible)
         {
             AlwaysVisibleDisableRequested?.Invoke();
@@ -153,12 +189,18 @@ public sealed class TranslationPopupPresenter : IDisposable
         SetAlwaysVisible(false);
     }
 
+    private void OnDragStarted()
+    {
+        _hasUserPositionedWindow = true;
+        CancelDismissTimer();
+    }
+
     private void RestartDismissTimer(
         TranslationPopupWindow window)
     {
         CancelDismissTimer();
 
-        if (_isAlwaysVisible)
+        if (_isAlwaysVisible || _isAwaitingInput)
         {
             return;
         }
@@ -175,6 +217,17 @@ public sealed class TranslationPopupPresenter : IDisposable
         _dismissCancellation?.Cancel();
         _dismissCancellation?.Dispose();
         _dismissCancellation = null;
+    }
+
+    private void PositionIfNeeded(
+        TranslationPopupWindow window)
+    {
+        if (_hasUserPositionedWindow)
+        {
+            return;
+        }
+
+        PositionNearWorkingAreaCorner(window);
     }
 
     private static void PositionNearWorkingAreaCorner(
