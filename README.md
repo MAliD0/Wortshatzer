@@ -15,6 +15,7 @@ Wortshatzer is an Avalonia desktop application that captures words, translates t
 - floating translation popup that does not intentionally take focus
 - in-memory demo dictionary when no online provider is configured
 - optional DeepL API translation for arbitrary supported text
+- runtime translation-method selector for DeepL, web scraping, and the offline demo
 - declarative dictionary scraper profiles with CSS selectors, fallback selectors, custom fields, and extraction limits
 - AngleSharp extraction engine with support for text, HTML, and attribute values
 - bounded HTTP dictionary lookup with a 12-hour in-memory cache
@@ -74,7 +75,9 @@ dotnet run --project .\Wortshatzer.csproj
 
 These PowerShell variables apply only to the current terminal session. Never put a real API key in source code, a commit, an issue, or a pull request.
 
-When no key is present, the application automatically uses the demo dictionary.
+When no key is present, DeepL is omitted from the selector and the application starts with the demo dictionary. When a key is configured, DeepL is the default, while **Web scraper** and **Offline demo** remain selectable.
+
+Choose the translation method from the main-window header. The choice applies to manual entry, clipboard capture, OCR, and floating popups because all inputs share the same translation pipeline.
 
 ## Flexible dictionary scraping
 
@@ -95,6 +98,8 @@ The HTTP lookup layer reuses one client, rejects oversized pages, converts netwo
 Open **Dictionary settings** from the main window to create or clone a profile. Built-ins cannot be overwritten or deleted. Custom profiles are stored atomically under `%LOCALAPPDATA%\\Wortshatzer\\scraper-profiles.json`, and **Test profile** previews the current unsaved selectors against a real word. Cache keys include the complete profile configuration, so changing a selector always produces a fresh preview.
 
 Use **Use for language pair** to choose the active profile for its source and target languages. Selections are stored under `%LOCALAPPDATA%\\Wortshatzer\\active-scraper-profiles.json`. If no selection exists, Wortshatzer uses the first matching built-in. Translation is displayed immediately; dictionary details load independently and then appear in the main result. A still-visible capture popup expands when the details arrive.
+
+When **Web scraper** is the selected translation method, the active profile's first non-empty **Translation** value becomes the primary translation. Profiles used only for definitions or grammar can still enrich results, but cannot act as the translation method until a Translation field is configured.
 
 ## Architecture
 
