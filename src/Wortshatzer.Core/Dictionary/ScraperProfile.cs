@@ -174,8 +174,9 @@ public sealed record DictionarySuggestion(
 
 public interface IDictionarySuggestionExtractor
 {
-    Task<DictionarySuggestion?> ExtractFirstSuggestionAsync(
+    Task<DictionarySuggestion?> ExtractClosestSuggestionAsync(
         ScraperProfile profile,
+        string query,
         string html,
         Uri pageUri,
         CancellationToken cancellationToken = default);
