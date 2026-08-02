@@ -112,4 +112,54 @@ public sealed class AngleSharpScraperEngineTests
 
         Assert.Contains("Translation", exception.Message);
     }
+    [Fact]
+    public async Task ExtractFirstSuggestionAsync_UsesFirstSafeLink()
+    {
+        const string suggestionHtml =
+            """
+            <main>
+              <ul class="suggestions">
+                <li>
+                  <a href="/dictionary/german-english/vielleicht">
+                    vielleicht
+                  </a>
+                </li>
+                <li>
+                  <a href="https://untrusted.test/word">
+                    untrusted
+                  </a>
+                </li>
+              </ul>
+            </main>
+            """;
+        var profile = new ScraperProfile(
+            "Test dictionary",
+            "https://dictionary.test/{word}",
+            "de",
+            "en",
+            [
+                new ScraperExtractionRule(
+                    DictionaryField.Translation,
+                    ".translation",
+                    isRequired: true)
+            ],
+            suggestionRule: new ScraperSuggestionRule(
+                ".suggestions a"));
+        var engine = new AngleSharpScraperEngine();
+
+        var suggestion =
+            await engine.ExtractFirstSuggestionAsync(
+                profile,
+                suggestionHtml,
+                new Uri(
+                    "https://dictionary.test/spellcheck?q=vieleicht"),
+                TestContext.Current.CancellationToken);
+
+        Assert.NotNull(suggestion);
+        Assert.Equal("vielleicht", suggestion.Word);
+        Assert.Equal(
+            "https://dictionary.test/dictionary/german-english/vielleicht",
+            suggestion.SourceUri.AbsoluteUri);
+    }
+
 }
