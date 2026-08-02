@@ -10,7 +10,7 @@ Wortshatzer is an Avalonia desktop application that captures words, translates t
 - filtering for duplicate, multiline, and long clipboard content
 - Windows global shortcuts for clipboard and screen-region capture
 - shortcut capture from clipboard text or clipboard images
-- drag-to-select screen-region OCR
+- Windows Snipping Tool region selection followed by OCR
 - offline Tesseract OCR for German, English, Polish, and Russian
 - floating translation popup that does not intentionally take focus
 - optional always-visible popup with its own quick-translation input
@@ -38,9 +38,11 @@ dotnet run --project .\Wortshatzer.csproj
 On Windows:
 
 - `Ctrl + Alt + Z` reads a short word or phrase from the clipboard. If there is no suitable text, it tries OCR on a clipboard image.
-- `Ctrl + Shift + O` opens a full-screen overlay. Drag around a word or short phrase; release to run OCR and translate it. Press `Esc` to cancel.
+- `Ctrl + Shift + O` opens the native Windows Snipping Tool. Select a word or short phrase; the new clipboard image is detected, recognized, and translated automatically. Press `Esc` to cancel.
 
 OCR uses the source language selected in the main window. Short OCR results are translated immediately and shown in the popup. Longer results are placed in the editor for correction.
+
+The native snipping flow avoids the application's former GDI/BitBlt capture path, which could turn hardware-accelerated video surfaces black. Windows can still intentionally exclude DRM-protected content from screenshots.
 
 Enable **Keep translation popup open** in the main window to pin the popup near the working-area corner. The pinned popup can translate a word or short phrase directly; press Enter or select **Translate**. It reuses the source language, target language, and translation method selected in the main window. Closing the pinned popup turns the option off.
 
