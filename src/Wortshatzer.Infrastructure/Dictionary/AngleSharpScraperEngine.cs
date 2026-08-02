@@ -107,13 +107,15 @@ public sealed class AngleSharpScraperEngine :
     }
 
     public async Task<DictionarySuggestion?>
-        ExtractFirstSuggestionAsync(
+        ExtractClosestSuggestionAsync(
             ScraperProfile profile,
+            string query,
             string html,
             Uri pageUri,
             CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(profile);
+        ArgumentException.ThrowIfNullOrWhiteSpace(query);
         ArgumentException.ThrowIfNullOrWhiteSpace(html);
         ArgumentNullException.ThrowIfNull(pageUri);
 
@@ -144,6 +146,8 @@ public sealed class AngleSharpScraperEngine :
                 "The suggestion page could not be parsed.",
                 exception);
         }
+
+        var suggestions = new List<DictionarySuggestion>();
 
         foreach (var selector in rule.EnumerateSelectors())
         {
@@ -190,16 +194,72 @@ public sealed class AngleSharpScraperEngine :
                         .Trim('/');
                 }
 
-                if (!string.IsNullOrWhiteSpace(word))
+                if (string.IsNullOrWhiteSpace(word)
+                    || suggestions.Any(item =>
+                        item.SourceUri == suggestionUri))
                 {
-                    return new DictionarySuggestion(
-                        word,
-                        suggestionUri);
+                    continue;
                 }
+
+                suggestions.Add(
+                    new DictionarySuggestion(
+                        word,
+                        suggestionUri));
+            }
+
+            if (suggestions.Count > 0)
+            {
+                break;
             }
         }
 
-        return null;
+        return suggestions
+            .OrderBy(item => CalculateEditDistance(
+                query,
+                item.Word))
+            .ThenBy(item => item.Word.Length)
+            .FirstOrDefault();
+    }
+
+    private static int CalculateEditDistance(
+        string first,
+        string second)
+    {
+        var source = first.Trim().ToLowerInvariant();
+        var target = second.Trim().ToLowerInvariant();
+        var previous = Enumerable
+            .Range(0, target.Length + 1)
+            .ToArray();
+        var current = new int[target.Length + 1];
+
+        for (var sourceIndex = 1;
+             sourceIndex <= source.Length;
+             sourceIndex++)
+        {
+            current[0] = sourceIndex;
+
+            for (var targetIndex = 1;
+                 targetIndex <= target.Length;
+                 targetIndex++)
+            {
+                var substitutionCost =
+                    source[sourceIndex - 1]
+                        == target[targetIndex - 1]
+                        ? 0
+                        : 1;
+
+                current[targetIndex] = Math.Min(
+                    Math.Min(
+                        current[targetIndex - 1] + 1,
+                        previous[targetIndex] + 1),
+                    previous[targetIndex - 1]
+                        + substitutionCost);
+            }
+
+            (previous, current) = (current, previous);
+        }
+
+        return previous[target.Length];
     }
 
     private static IElement ResolveEntryScope(
