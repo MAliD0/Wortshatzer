@@ -9,30 +9,74 @@ namespace Wortshatzer.Services;
 
 public sealed class TranslationPopupPresenter : IDisposable
 {
+    private const double CompactHeight = 300;
+    private const double DictionaryHeight = 440;
+
     private static readonly TimeSpan DisplayDuration =
         TimeSpan.FromSeconds(5);
 
+    private readonly TranslationPopupViewModel _viewModel;
     private TranslationPopupWindow? _window;
     private CancellationTokenSource? _dismissCancellation;
+    private bool _isAlwaysVisible;
     private bool _isDisposed;
+
+    public event Action? AlwaysVisibleDisableRequested;
+
+    public TranslationPopupPresenter(
+        Func<
+            string,
+            CancellationToken,
+            Task<WordTranslation>> translateAsync)
+    {
+        ArgumentNullException.ThrowIfNull(translateAsync);
+
+        _viewModel =
+            new TranslationPopupViewModel(translateAsync);
+    }
+
+    public void SetAlwaysVisible(bool isAlwaysVisible)
+    {
+        ObjectDisposedException.ThrowIf(_isDisposed, this);
+
+        _isAlwaysVisible = isAlwaysVisible;
+        CancelDismissTimer();
+
+        if (!isAlwaysVisible)
+        {
+            _window?.Hide();
+            return;
+        }
+
+        var window = EnsureWindow();
+        window.Height = _viewModel.HasDictionaryDetails
+            ? DictionaryHeight
+            : CompactHeight;
+
+        if (!window.IsVisible)
+        {
+            window.Show();
+        }
+
+        PositionNearWorkingAreaCorner(window);
+    }
 
     public void Show(WordTranslation translation)
     {
         ObjectDisposedException.ThrowIf(_isDisposed, this);
         ArgumentNullException.ThrowIfNull(translation);
 
-        _window ??= new TranslationPopupWindow();
-        _window.Height = 190;
-        _window.DataContext =
-            new TranslationPopupViewModel(translation);
+        var window = EnsureWindow();
+        _viewModel.ApplyTranslation(translation);
+        window.Height = CompactHeight;
 
-        if (!_window.IsVisible)
+        if (!window.IsVisible)
         {
-            _window.Show();
+            window.Show();
         }
 
-        PositionNearWorkingAreaCorner(_window);
-        RestartDismissTimer(_window);
+        PositionNearWorkingAreaCorner(window);
+        RestartDismissTimer(window);
     }
 
     public void ShowDictionary(
@@ -43,24 +87,22 @@ public sealed class TranslationPopupPresenter : IDisposable
 
         if (_window is null
             || !_window.IsVisible
-            || _window.DataContext
-                is not TranslationPopupViewModel viewModel
             || !string.Equals(
-                viewModel.SourceText,
+                _viewModel.SourceText,
                 result.Query,
                 StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
 
-        viewModel.ApplyDictionaryResult(result);
+        _viewModel.ApplyDictionaryResult(result);
 
-        if (!viewModel.HasDictionaryDetails)
+        if (!_viewModel.HasDictionaryDetails)
         {
             return;
         }
 
-        _window.Height = 330;
+        _window.Height = DictionaryHeight;
         PositionNearWorkingAreaCorner(_window);
         RestartDismissTimer(_window);
     }
@@ -72,23 +114,67 @@ public sealed class TranslationPopupPresenter : IDisposable
             return;
         }
 
-        _dismissCancellation?.Cancel();
-        _dismissCancellation?.Dispose();
-        _window?.Close();
+        CancelDismissTimer();
+
+        if (_window is not null)
+        {
+            _window.DismissRequested -=
+                OnDismissRequested;
+            _window.Close();
+        }
+
         _window = null;
         _isDisposed = true;
+    }
+
+    private TranslationPopupWindow EnsureWindow()
+    {
+        if (_window is not null)
+        {
+            return _window;
+        }
+
+        _window = new TranslationPopupWindow
+        {
+            DataContext = _viewModel
+        };
+        _window.DismissRequested += OnDismissRequested;
+
+        return _window;
+    }
+
+    private void OnDismissRequested()
+    {
+        if (_isAlwaysVisible)
+        {
+            AlwaysVisibleDisableRequested?.Invoke();
+        }
+
+        SetAlwaysVisible(false);
     }
 
     private void RestartDismissTimer(
         TranslationPopupWindow window)
     {
-        _dismissCancellation?.Cancel();
-        _dismissCancellation?.Dispose();
+        CancelDismissTimer();
+
+        if (_isAlwaysVisible)
+        {
+            return;
+        }
+
         _dismissCancellation = new CancellationTokenSource();
 
         _ = HideAfterDelayAsync(
             window,
             _dismissCancellation.Token);
+    }
+
+    private void CancelDismissTimer()
+    {
+        _dismissCancellation?.Cancel();
+        _dismissCancellation?.Dispose();
+        _dismissCancellation = null;
     }
 
     private static void PositionNearWorkingAreaCorner(
