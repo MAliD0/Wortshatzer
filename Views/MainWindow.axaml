@@ -102,6 +102,11 @@
                                 IsChecked="{Binding IsClipboardCaptureEnabled, Mode=TwoWay}"
                                 FontWeight="SemiBold"
                                 Foreground="#3730A3"/>
+                            <CheckBox
+                                Content="Keep translation popup open"
+                                IsChecked="{Binding IsPopupAlwaysVisible, Mode=TwoWay}"
+                                FontWeight="SemiBold"
+                                Foreground="#3730A3"/>
                             <TextBlock
                                 Margin="26,0,0,0"
                                 Text="{Binding CaptureStatus}"
