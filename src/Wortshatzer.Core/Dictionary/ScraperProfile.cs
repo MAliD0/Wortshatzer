@@ -142,19 +142,67 @@ public sealed record ScraperSuggestionRule
 
     public IReadOnlyList<string> FallbackSelectors { get; }
 
+    public string? SearchUrlTemplate { get; }
+
     public ScraperSuggestionRule(
         string selector,
-        IEnumerable<string>? fallbackSelectors = null)
+        IEnumerable<string>? fallbackSelectors = null,
+        string? searchUrlTemplate = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(selector);
 
+        if (!string.IsNullOrWhiteSpace(searchUrlTemplate))
+        {
+            if (!searchUrlTemplate.Contains(
+                    "{word}",
+                    StringComparison.Ordinal))
+            {
+                throw new ArgumentException(
+                    "The suggestion URL must contain the {word} placeholder.",
+                    nameof(searchUrlTemplate));
+            }
+
+            var validationUrl = searchUrlTemplate.Replace(
+                "{word}",
+                "test",
+                StringComparison.Ordinal);
+
+            if (!Uri.TryCreate(
+                    validationUrl,
+                    UriKind.Absolute,
+                    out var uri)
+                || uri.Scheme != Uri.UriSchemeHttps)
+            {
+                throw new ArgumentException(
+                    "The suggestion URL must be an absolute HTTPS address.",
+                    nameof(searchUrlTemplate));
+            }
+        }
+
         Selector = selector.Trim();
+        SearchUrlTemplate =
+            string.IsNullOrWhiteSpace(searchUrlTemplate)
+                ? null
+                : searchUrlTemplate.Trim();
         FallbackSelectors = (fallbackSelectors ?? [])
             .Select(value => value?.Trim())
             .Where(value => !string.IsNullOrWhiteSpace(value))
             .Cast<string>()
             .Distinct(StringComparer.Ordinal)
             .ToArray();
+    }
+
+    public Uri? BuildSearchUri(string word)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(word);
+
+        return SearchUrlTemplate is null
+            ? null
+            : new Uri(
+                SearchUrlTemplate.Replace(
+                    "{word}",
+                    Uri.EscapeDataString(word.Trim()),
+                    StringComparison.Ordinal));
     }
 
     public IEnumerable<string> EnumerateSelectors()
