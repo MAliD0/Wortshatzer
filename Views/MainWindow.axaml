@@ -17,7 +17,7 @@
         <Border
             Background="#172033"
             Padding="32,20">
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid ColumnDefinitions="*,Auto,12,Auto">
                 <StackPanel Spacing="3">
                     <TextBlock
                         Text="Wortshatzer"
@@ -48,6 +48,15 @@
                             Foreground="#D6DEED"/>
                     </StackPanel>
                 </Border>
+
+                <Button
+                    Grid.Column="3"
+                    Content="Dictionary settings"
+                    Command="{Binding OpenScraperSettingsCommand}"
+                    VerticalAlignment="Center"
+                    Padding="14,9"
+                    Background="#273449"
+                    Foreground="#D6DEED"/>
             </Grid>
         </Border>
 
