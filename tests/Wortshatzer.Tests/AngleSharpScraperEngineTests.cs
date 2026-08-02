@@ -168,4 +168,52 @@ public sealed class AngleSharpScraperEngineTests
             suggestion.SourceUri.AbsoluteUri);
     }
 
+    [Fact]
+    public async Task ExtractClosestSuggestionAsync_RejectsDictionaryRootLink()
+    {
+        const string suggestionHtml =
+            """
+            <main>
+              <a href="/dictionary/german-english/">
+                German–English
+              </a>
+            </main>
+            <section class="suggestions">
+              <a href="/dictionary/german-english/strategisch">
+                strategisch
+              </a>
+            </section>
+            """;
+        var profile = new ScraperProfile(
+            "Test dictionary",
+            "https://dictionary.test/dictionary/german-english/{word}",
+            "de",
+            "en",
+            [
+                new ScraperExtractionRule(
+                    DictionaryField.Translation,
+                    ".translation",
+                    isRequired: true)
+            ],
+            suggestionRule: new ScraperSuggestionRule(
+                "main a",
+                [".suggestions a"]));
+        var engine = new AngleSharpScraperEngine();
+
+        var suggestion =
+            await engine.ExtractClosestSuggestionAsync(
+                profile,
+                "strategische",
+                suggestionHtml,
+                new Uri(
+                    "https://dictionary.test/spellcheck/german-english/?q=strategische"),
+                TestContext.Current.CancellationToken);
+
+        Assert.NotNull(suggestion);
+        Assert.Equal("strategisch", suggestion.Word);
+        Assert.Equal(
+            "https://dictionary.test/dictionary/german-english/strategisch",
+            suggestion.SourceUri.AbsoluteUri);
+    }
+
 }
