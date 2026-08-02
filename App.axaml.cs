@@ -65,18 +65,31 @@ public partial class App : Application
                 new ClipboardOcrCaptureService(
                     clipboard,
                     textRecognitionService);
+            var screenRegionCaptureService =
+                new WindowsScreenRegionCaptureService(mainWindow);
 
             var viewModel = new MainWindowViewModel(
                 translationService,
                 captureService,
-                clipboardOcrCaptureService);
+                clipboardOcrCaptureService,
+                screenRegionCaptureService,
+                textRecognitionService);
 
-            var clipboardShortcut = new GlobalShortcutRegistration(
-                GlobalShortcutAction.CaptureClipboard,
-                new GlobalShortcutGesture(
-                    ShortcutModifiers.Control
-                        | ShortcutModifiers.Alt,
-                    ShortcutKey.Z));
+            GlobalShortcutRegistration[] shortcuts =
+            [
+                new(
+                    GlobalShortcutAction.CaptureClipboard,
+                    new GlobalShortcutGesture(
+                        ShortcutModifiers.Control
+                            | ShortcutModifiers.Alt,
+                        ShortcutKey.Z)),
+                new(
+                    GlobalShortcutAction.CaptureOcrRegion,
+                    new GlobalShortcutGesture(
+                        ShortcutModifiers.Control
+                            | ShortcutModifiers.Shift,
+                        ShortcutKey.O))
+            ];
 
             void OnShortcutPressed(
                 object? sender,
@@ -89,13 +102,11 @@ public partial class App : Application
 
             shortcutService.ShortcutPressed += OnShortcutPressed;
 
-            var failedShortcuts = shortcutService.Start(
-                [clipboardShortcut]);
+            var failedShortcuts = shortcutService.Start(shortcuts);
 
             viewModel.SetShortcutStatus(
-                clipboardShortcut.Gesture,
-                !failedShortcuts.Contains(
-                    GlobalShortcutAction.CaptureClipboard));
+                shortcuts,
+                failedShortcuts);
 
             viewModel.TranslationReady += popupPresenter.Show;
             mainWindow.DataContext = viewModel;
