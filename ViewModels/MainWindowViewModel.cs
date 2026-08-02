@@ -346,6 +346,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                 ? "Captured text translated."
                 : "Translation ready.";
 
+            TranslationCompleted?.Invoke(translation);
+
             if (showPopup)
             {
                 TranslationReady?.Invoke(translation);
@@ -452,6 +454,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void OnTranslationInputChanged()
     {
+        ResetDictionaryDetails();
         HasTranslation = false;
         HasError = false;
         ShowEmptyState = true;
