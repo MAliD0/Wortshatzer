@@ -53,6 +53,21 @@ public sealed record OcrResult
     }
 }
 
+public sealed class OcrException : Exception
+{
+    public OcrException(string message)
+        : base(message)
+    {
+    }
+
+    public OcrException(
+        string message,
+        Exception innerException)
+        : base(message, innerException)
+    {
+    }
+}
+
 public interface ITextRecognitionService
 {
     string ProviderName { get; }
@@ -61,6 +76,13 @@ public interface ITextRecognitionService
 
     Task<OcrResult> RecognizeAsync(
         OcrImage image,
+        string languageCode,
+        CancellationToken cancellationToken = default);
+}
+
+public interface IClipboardOcrCaptureService
+{
+    Task<OcrResult?> RecognizeCurrentImageAsync(
         string languageCode,
         CancellationToken cancellationToken = default);
 }
