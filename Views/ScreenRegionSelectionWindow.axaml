@@ -1,0 +1,40 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    x:Class="Wortshatzer.Views.ScreenRegionSelectionWindow"
+    Title="Select text for OCR"
+    CanResize="False"
+    ShowInTaskbar="False"
+    Topmost="True"
+    WindowDecorations="None"
+    Background="#880C1424"
+    Cursor="Cross">
+
+    <Canvas>
+        <Border
+            x:Name="SelectionBorder"
+            IsVisible="False"
+            BorderBrush="#66D9FF"
+            BorderThickness="2"
+            Background="#221AC8FF"
+            CornerRadius="3"/>
+
+        <Border
+            Canvas.Left="24"
+            Canvas.Top="24"
+            Padding="14,10"
+            Background="#E6172030"
+            CornerRadius="8">
+            <StackPanel Spacing="3">
+                <TextBlock
+                    Text="Drag around the word or phrase"
+                    FontWeight="SemiBold"
+                    Foreground="White"/>
+                <TextBlock
+                    Text="Release to capture • Esc to cancel"
+                    FontSize="12"
+                    Foreground="#C4CDDC"/>
+            </StackPanel>
+        </Border>
+    </Canvas>
+</Window>
