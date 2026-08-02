@@ -225,7 +225,7 @@ public sealed class HttpDictionaryLookupService :
 
         if (suggestion is null
             || suggestion.SourceUri
-                == suggestionPage.SourceUri)
+                == pageToParse.SourceUri)
         {
             return null;
         }
