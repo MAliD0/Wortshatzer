@@ -68,7 +68,7 @@ public partial class App : Application
                     clipboard,
                     textRecognitionService);
             var screenRegionCaptureService =
-                new WindowsScreenRegionCaptureService(mainWindow);
+                new WindowsSnippingToolCaptureService(clipboard);
 
             var dictionaryHttpClient = new HttpClient
             {
