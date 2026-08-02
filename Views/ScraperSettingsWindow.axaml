@@ -194,6 +194,13 @@
                                     Grid.Column="2"
                                     Spacing="5">
                                     <TextBlock
+                                        Text="Suggestion URL template (optional)"
+                                        FontSize="11"
+                                        Foreground="#667085"/>
+                                    <TextBox
+                                        Text="{Binding SuggestionSearchUrlTemplate, Mode=TwoWay}"
+                                        PlaceholderText="https://dictionary.example/spellcheck/?q={word}"/>
+                                    <TextBlock
                                         Text="Suggestion link selector"
                                         FontSize="11"
                                         Foreground="#667085"/>
