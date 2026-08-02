@@ -11,6 +11,8 @@ public partial class MainWindowViewModel
 
     public event Action<bool>? PopupAlwaysVisibleChanged;
 
+    public event Action<string, string>? PopupInputRequested;
+
     public async Task<WordTranslation> TranslateFromPopupAsync(
         string text,
         CancellationToken cancellationToken = default)
