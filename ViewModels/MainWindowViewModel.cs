@@ -254,11 +254,23 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         CaptureStatus =
             $"Recognizing selected region as {sourceLanguage.DisplayName}…";
 
-        var ocrResult = await _textRecognitionService.RecognizeAsync(
-            image,
-            sourceLanguage.Code);
+        try
+        {
+            var ocrResult =
+                await _textRecognitionService.RecognizeAsync(
+                    image,
+                    sourceLanguage.Code);
 
-        ProcessOcrResult(ocrResult);
+            ProcessOcrResult(ocrResult);
+        }
+        catch (OcrException exception)
+        {
+            CaptureStatus =
+                $"{exception.Message} Enter or correct the text in the popup.";
+            PopupInputRequested?.Invoke(
+                string.Empty,
+                CaptureStatus);
+        }
     }
 
     private void ProcessOcrResult(OcrResult ocrResult)
@@ -272,7 +284,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         {
             CapturedText = singleLineText;
             CaptureStatus =
-                "OCR found text, but it must be corrected to a word or phrase of up to three words.";
+                "OCR text needs correction. Edit it to a word or phrase of up to three words.";
+            PopupInputRequested?.Invoke(
+                singleLineText,
+                CaptureStatus);
             return;
         }
 
