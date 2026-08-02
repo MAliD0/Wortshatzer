@@ -127,6 +127,85 @@ public sealed class HttpDictionaryLookupServiceTests
     }
 
     [Fact]
+    public async Task LookupAsync_DoesNotApplyEntrySelectorToSpellcheckPage()
+    {
+        var handler = new StubHandler(request =>
+        {
+            var html = request.RequestUri!.AbsolutePath.EndsWith(
+                    "/strategisch",
+                    StringComparison.Ordinal)
+                ? """
+                  <main class="entry-body">
+                    <h1>strategisch</h1>
+                    <span class="translation">strategic</span>
+                  </main>
+                  """
+                : """
+                  <main>
+                    <article>
+                      <h1>erreichen</h1>
+                      <span class="translation">reach</span>
+                    </article>
+                    <ul class="suggestions">
+                      <li>
+                        <a href="/dictionary/de-en/strategisch">
+                          strategisch
+                        </a>
+                      </li>
+                    </ul>
+                  </main>
+                  """;
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    html,
+                    Encoding.UTF8,
+                    "text/html")
+            };
+        });
+        using var httpClient = new HttpClient(handler);
+        var profile = new ScraperProfile(
+            "Test dictionary",
+            "https://dictionary.test/spellcheck/de-en/?q={word}",
+            "de",
+            "en",
+            [
+                new ScraperExtractionRule(
+                    DictionaryField.Headword,
+                    "h1",
+                    resultMode: ScraperResultMode.First,
+                    isRequired: true),
+                new ScraperExtractionRule(
+                    DictionaryField.Translation,
+                    ".translation",
+                    isRequired: true)
+            ],
+            ".entry-body",
+            new ScraperSuggestionRule(
+                ".suggestions a"));
+        var service = new HttpDictionaryLookupService(
+            httpClient,
+            new AngleSharpScraperEngine());
+
+        var result = await service.LookupAsync(
+            profile,
+            "strategische",
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, handler.RequestCount);
+        Assert.Equal(
+            ["strategisch"],
+            result.GetValues(DictionaryField.Headword));
+        Assert.Equal(
+            ["strategic"],
+            result.GetValues(DictionaryField.Translation));
+        Assert.DoesNotContain(
+            "erreichen",
+            result.GetValues(DictionaryField.Headword));
+    }
+
+    [Fact]
     public async Task LookupAsync_FetchesConfiguredSuggestionPageAfterExtractionFailure()
     {
         var handler = new StubHandler(request =>
