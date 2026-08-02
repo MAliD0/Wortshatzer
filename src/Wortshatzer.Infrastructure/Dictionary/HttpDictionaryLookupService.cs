@@ -199,13 +199,28 @@ public sealed class HttpDictionaryLookupService :
             return null;
         }
 
+        var pageToParse = suggestionPage;
+        var suggestionSearchUri =
+            profile.SuggestionRule.BuildSearchUri(
+                originalWord);
+
+        if (suggestionSearchUri is not null
+            && suggestionSearchUri
+                != suggestionPage.SourceUri)
+        {
+            pageToParse = await FetchPageAsync(
+                profile,
+                suggestionSearchUri,
+                cancellationToken);
+        }
+
         var suggestion =
             await _suggestionExtractor
                 .ExtractClosestSuggestionAsync(
                     profile,
                     originalWord,
-                    suggestionPage.Html,
-                    suggestionPage.SourceUri,
+                    pageToParse.Html,
+                    pageToParse.SourceUri,
                     cancellationToken);
 
         if (suggestion is null
@@ -288,6 +303,9 @@ public sealed class HttpDictionaryLookupService :
         key.AppendLine(profile.EntrySelector ?? string.Empty);
         key.AppendLine(
             profile.SuggestionRule?.Selector
+                ?? string.Empty);
+        key.AppendLine(
+            profile.SuggestionRule?.SearchUrlTemplate
                 ?? string.Empty);
         key.AppendLine(string.Join(
             "\u001F",
