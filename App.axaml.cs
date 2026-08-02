@@ -41,7 +41,6 @@ public partial class App : Application
                 new ClipboardCaptureService(clipboard);
             var shortcutService =
                 new WindowsGlobalShortcutService();
-            var popupPresenter = new TranslationPopupPresenter();
 
             var applicationDataDirectory = Path.Combine(
                 Environment.GetFolderPath(
@@ -135,6 +134,15 @@ public partial class App : Application
                 dictionaryLookupService,
                 scraperProfileResolver);
 
+            var popupPresenter =
+                new TranslationPopupPresenter(
+                    viewModel.TranslateFromPopupAsync);
+
+            void OnAlwaysVisibleDisableRequested()
+            {
+                viewModel.IsPopupAlwaysVisible = false;
+            }
+
             GlobalShortcutRegistration[] shortcuts =
             [
                 new(
@@ -206,6 +214,10 @@ public partial class App : Application
             viewModel.TranslationReady += popupPresenter.Show;
             viewModel.DictionaryResultReady +=
                 popupPresenter.ShowDictionary;
+            viewModel.PopupAlwaysVisibleChanged +=
+                popupPresenter.SetAlwaysVisible;
+            popupPresenter.AlwaysVisibleDisableRequested +=
+                OnAlwaysVisibleDisableRequested;
             viewModel.ScraperSettingsRequested +=
                 OnScraperSettingsRequested;
             mainWindow.DataContext = viewModel;
@@ -216,6 +228,10 @@ public partial class App : Application
                 viewModel.TranslationReady -= popupPresenter.Show;
                 viewModel.DictionaryResultReady -=
                     popupPresenter.ShowDictionary;
+                viewModel.PopupAlwaysVisibleChanged -=
+                    popupPresenter.SetAlwaysVisible;
+                popupPresenter.AlwaysVisibleDisableRequested -=
+                    OnAlwaysVisibleDisableRequested;
                 viewModel.ScraperSettingsRequested -=
                     OnScraperSettingsRequested;
                 shortcutService.Dispose();
