@@ -96,6 +96,12 @@
                             Command="{Binding CloneProfileCommand}"
                             HorizontalContentAlignment="Center"/>
                         <Button
+                            Content="Use for language pair"
+                            Command="{Binding SetActiveProfileCommand}"
+                            HorizontalContentAlignment="Center"
+                            Background="#EEF2FF"
+                            Foreground="#3730A3"/>
+                        <Button
                             Content="Delete custom"
                             Command="{Binding DeleteProfileCommand}"
                             HorizontalContentAlignment="Center"
