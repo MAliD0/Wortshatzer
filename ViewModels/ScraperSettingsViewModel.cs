@@ -154,6 +154,10 @@ public partial class ScraperSettingsViewModel :
     private string _suggestionSelector = string.Empty;
 
     [ObservableProperty]
+    private string _suggestionSearchUrlTemplate =
+        string.Empty;
+
+    [ObservableProperty]
     private string _suggestionFallbackSelectorsText =
         string.Empty;
 
@@ -261,6 +265,7 @@ public partial class ScraperSettingsViewModel :
         EntrySelector = string.Empty;
         UseClosestSuggestion = false;
         SuggestionSelector = string.Empty;
+        SuggestionSearchUrlTemplate = string.Empty;
         SuggestionFallbackSelectorsText = string.Empty;
         Rules.Clear();
         AddRule();
@@ -464,7 +469,11 @@ public partial class ScraperSettingsViewModel :
         var suggestionRule = UseClosestSuggestion
             ? new ScraperSuggestionRule(
                 SuggestionSelector,
-                suggestionFallbackSelectors)
+                suggestionFallbackSelectors,
+                string.IsNullOrWhiteSpace(
+                    SuggestionSearchUrlTemplate)
+                    ? null
+                    : SuggestionSearchUrlTemplate)
             : null;
 
         return new ScraperProfile(
@@ -517,6 +526,9 @@ public partial class ScraperSettingsViewModel :
             profile.SuggestionRule is not null;
         SuggestionSelector =
             profile.SuggestionRule?.Selector
+                ?? string.Empty;
+        SuggestionSearchUrlTemplate =
+            profile.SuggestionRule?.SearchUrlTemplate
                 ?? string.Empty;
         SuggestionFallbackSelectorsText =
             string.Join(
