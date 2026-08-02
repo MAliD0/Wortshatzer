@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Net;
 using System.Text;
 using Wortshatzer.Core.Dictionary;
 
@@ -99,8 +98,11 @@ public sealed class HttpDictionaryLookupService :
                     $"Dictionary '{profile.Name}' returned HTTP {(int)response.StatusCode} ({response.StatusCode}).");
             }
 
-            if (response.Content.Headers.ContentLength
-                is > _maximumResponseBytes)
+            var contentLength =
+                response.Content.Headers.ContentLength;
+
+            if (contentLength.HasValue
+                && contentLength.Value > _maximumResponseBytes)
             {
                 throw ResponseTooLarge(profile);
             }
