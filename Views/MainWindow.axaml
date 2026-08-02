@@ -36,16 +36,22 @@
                     VerticalAlignment="Center"
                     Background="#273449"
                     CornerRadius="14">
-                    <StackPanel Spacing="1">
+                    <StackPanel Spacing="3">
                         <TextBlock
-                            Text="Translation provider"
+                            Text="Translation method"
                             FontSize="10"
                             Foreground="#93A0B8"/>
-                        <TextBlock
-                            Text="{Binding TranslationProviderName}"
-                            FontSize="12"
-                            FontWeight="SemiBold"
-                            Foreground="#D6DEED"/>
+                        <ComboBox
+                            Width="170"
+                            ItemsSource="{Binding TranslationMethods}"
+                            SelectedItem="{Binding SelectedTranslationMethod, Mode=TwoWay}"
+                            HorizontalContentAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:TranslationMethodOption">
+                                    <TextBlock Text="{Binding DisplayName}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
                     </StackPanel>
                 </Border>
 
