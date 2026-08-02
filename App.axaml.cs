@@ -5,6 +5,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Wortshatzer.Core.Shortcuts;
 using Wortshatzer.Core.Translation;
+using Wortshatzer.Infrastructure.Ocr;
 using Wortshatzer.Infrastructure.Translation;
 using Wortshatzer.Services;
 using Wortshatzer.ViewModels;
@@ -40,9 +41,35 @@ public partial class App : Application
             var shortcutService =
                 new WindowsGlobalShortcutService();
             var popupPresenter = new TranslationPopupPresenter();
+
+            var ocrHttpClient = new HttpClient
+            {
+                Timeout = TimeSpan.FromMinutes(2)
+            };
+            ocrHttpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "Wortshatzer/0.1");
+
+            var ocrDataDirectory = Path.Combine(
+                Environment.GetFolderPath(
+                    Environment.SpecialFolder.LocalApplicationData),
+                "Wortshatzer",
+                "tessdata");
+            var ocrLanguageDataManager =
+                new OcrLanguageDataManager(
+                    ocrHttpClient,
+                    ocrDataDirectory);
+            var textRecognitionService =
+                new TesseractTextRecognitionService(
+                    ocrLanguageDataManager);
+            var clipboardOcrCaptureService =
+                new ClipboardOcrCaptureService(
+                    clipboard,
+                    textRecognitionService);
+
             var viewModel = new MainWindowViewModel(
                 translationService,
-                captureService);
+                captureService,
+                clipboardOcrCaptureService);
 
             var clipboardShortcut = new GlobalShortcutRegistration(
                 GlobalShortcutAction.CaptureClipboard,
@@ -80,6 +107,7 @@ public partial class App : Application
                 shortcutService.Dispose();
                 viewModel.Dispose();
                 popupPresenter.Dispose();
+                ocrHttpClient.Dispose();
                 deepLHttpClient?.Dispose();
             };
 
