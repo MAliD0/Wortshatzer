@@ -5,7 +5,8 @@ using Wortshatzer.Core.Dictionary;
 namespace Wortshatzer.Infrastructure.Dictionary;
 
 public sealed class AngleSharpScraperEngine :
-    IDictionaryScraperEngine
+    IDictionaryScraperEngine,
+    IDictionarySuggestionExtractor
 {
     private readonly HtmlParser _parser = new();
 
@@ -103,6 +104,102 @@ public sealed class AngleSharpScraperEngine :
             profile.Name,
             sourceUri,
             readOnlyFields);
+    }
+
+    public async Task<DictionarySuggestion?>
+        ExtractFirstSuggestionAsync(
+            ScraperProfile profile,
+            string html,
+            Uri pageUri,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        ArgumentException.ThrowIfNullOrWhiteSpace(html);
+        ArgumentNullException.ThrowIfNull(pageUri);
+
+        var rule = profile.SuggestionRule;
+
+        if (rule is null)
+        {
+            return null;
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        IDocument document;
+
+        try
+        {
+            document = await _parser.ParseDocumentAsync(
+                html,
+                cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            throw new DictionaryScrapingException(
+                "The suggestion page could not be parsed.",
+                exception);
+        }
+
+        foreach (var selector in rule.EnumerateSelectors())
+        {
+            IHtmlCollection<IElement> candidates;
+
+            try
+            {
+                candidates =
+                    document.QuerySelectorAll(selector);
+            }
+            catch (Exception exception)
+            {
+                throw new DictionaryScrapingException(
+                    $"Suggestion selector '{selector}' is invalid.",
+                    exception);
+            }
+
+            foreach (var candidate in candidates)
+            {
+                var href = candidate.GetAttribute("href");
+
+                if (string.IsNullOrWhiteSpace(href)
+                    || !Uri.TryCreate(
+                        pageUri,
+                        href,
+                        out var suggestionUri)
+                    || suggestionUri.Scheme
+                        != Uri.UriSchemeHttps
+                    || !string.Equals(
+                        suggestionUri.Host,
+                        pageUri.Host,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var word =
+                    CollapseWhitespace(candidate.TextContent);
+
+                if (string.IsNullOrWhiteSpace(word))
+                {
+                    word = Uri.UnescapeDataString(
+                        suggestionUri.Segments[^1])
+                        .Trim('/');
+                }
+
+                if (!string.IsNullOrWhiteSpace(word))
+                {
+                    return new DictionarySuggestion(
+                        word,
+                        suggestionUri);
+                }
+            }
+        }
+
+        return null;
     }
 
     private static IElement ResolveEntryScope(
