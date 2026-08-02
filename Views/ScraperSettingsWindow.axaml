@@ -120,7 +120,7 @@
                 <Grid RowDefinitions="Auto,*">
                     <Grid
                         ColumnDefinitions="*,12,110,12,110"
-                        RowDefinitions="Auto,12,Auto,12,Auto">
+                        RowDefinitions="Auto,12,Auto,12,Auto,12,Auto">
                         <StackPanel Spacing="5">
                             <TextBlock
                                 Text="Profile name"
@@ -175,6 +175,43 @@
                                 Text="{Binding EntrySelector, Mode=TwoWay}"
                                 PlaceholderText=".entry"/>
                         </StackPanel>
+
+                        <Border
+                            Grid.Row="6"
+                            Grid.ColumnSpan="5"
+                            Padding="12"
+                            Background="#F8FAFC"
+                            BorderBrush="#E2E8F0"
+                            BorderThickness="1"
+                            CornerRadius="9">
+                            <Grid ColumnDefinitions="Auto,14,*">
+                                <CheckBox
+                                    Content="Use closest-word fallback"
+                                    IsChecked="{Binding UseClosestSuggestion, Mode=TwoWay}"
+                                    VerticalAlignment="Top"/>
+
+                                <StackPanel
+                                    Grid.Column="2"
+                                    Spacing="5">
+                                    <TextBlock
+                                        Text="Suggestion link selector"
+                                        FontSize="11"
+                                        Foreground="#667085"/>
+                                    <TextBox
+                                        Text="{Binding SuggestionSelector, Mode=TwoWay}"
+                                        PlaceholderText=".suggestions a"/>
+                                    <TextBlock
+                                        Text="Fallback selectors (one per line)"
+                                        FontSize="11"
+                                        Foreground="#667085"/>
+                                    <TextBox
+                                        Text="{Binding SuggestionFallbackSelectorsText, Mode=TwoWay}"
+                                        AcceptsReturn="True"
+                                        MinHeight="44"
+                                        PlaceholderText="main a[href*='/dictionary/']"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
                     </Grid>
 
                     <Grid
