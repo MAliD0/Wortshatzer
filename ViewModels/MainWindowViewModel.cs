@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Wortshatzer.Core.Capture;
 using Wortshatzer.Core.Languages;
+using Wortshatzer.Core.Shortcuts;
 using Wortshatzer.Core.Translation;
 using Wortshatzer.Core.Words;
 
@@ -37,6 +38,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     private string _captureStatus = "Clipboard monitoring is off.";
+
+    [ObservableProperty]
+    private string _shortcutStatus =
+        "Global clipboard shortcut is unavailable.";
 
     [ObservableProperty]
     private bool _isClipboardCaptureEnabled;
@@ -88,6 +93,58 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         SelectedSourceLanguage = Languages[0];
         SelectedTargetLanguage = Languages[1];
         CapturedText = "vielleicht";
+    }
+
+    public void SetShortcutStatus(
+        GlobalShortcutGesture gesture,
+        bool isActive)
+    {
+        ArgumentNullException.ThrowIfNull(gesture);
+
+        ShortcutStatus = isActive
+            ? $"Global shortcut {gesture} captures the current clipboard."
+            : $"Could not register {gesture}. It may be used by another application.";
+    }
+
+    public async Task HandleGlobalShortcutAsync(
+        GlobalShortcutAction action)
+    {
+        if (_isDisposed)
+        {
+            return;
+        }
+
+        if (action != GlobalShortcutAction.CaptureClipboard)
+        {
+            CaptureStatus = action switch
+            {
+                GlobalShortcutAction.CaptureOcrRegion =>
+                    "OCR region capture is not connected yet.",
+                GlobalShortcutAction.SaveLatestTranslation =>
+                    "Saving translations will be added with vocabulary storage.",
+                _ => CaptureStatus
+            };
+
+            return;
+        }
+
+        CaptureStatus = "Reading the current clipboard…";
+
+        try
+        {
+            var captured = await _textCaptureService.CaptureCurrentAsync(
+                TextCaptureSource.GlobalShortcut);
+
+            if (!captured)
+            {
+                CaptureStatus =
+                    "The clipboard does not contain a short word or phrase.";
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            CaptureStatus = "Clipboard capture was cancelled.";
+        }
     }
 
     public void Dispose()
@@ -142,7 +199,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         HasError = false;
         ShowEmptyState = true;
         StatusMessage = showPopup
-            ? $"Captured '{text}' from the clipboard. Translating…"
+            ? $"Captured '{text}'. Translating…"
             : "Translating…";
 
         try
@@ -167,7 +224,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             HasTranslation = true;
             ShowEmptyState = false;
             StatusMessage = showPopup
-                ? "Clipboard word translated."
+                ? "Captured text translated."
                 : "Translation ready.";
 
             if (showPopup)
@@ -202,7 +259,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         object? sender,
         TextCapturedEventArgs eventArgs)
     {
-        if (!IsClipboardCaptureEnabled)
+        if (eventArgs.Source == TextCaptureSource.ClipboardMonitor
+            && !IsClipboardCaptureEnabled)
         {
             return;
         }
@@ -213,7 +271,15 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             new CancellationTokenSource();
 
         CapturedText = eventArgs.Text;
-        CaptureStatus = $"Captured: {eventArgs.Text}";
+        CaptureStatus = eventArgs.Source switch
+        {
+            TextCaptureSource.GlobalShortcut =>
+                $"Shortcut captured: {eventArgs.Text}",
+            TextCaptureSource.Ocr =>
+                $"OCR captured: {eventArgs.Text}",
+            _ =>
+                $"Clipboard captured: {eventArgs.Text}"
+        };
 
         _ = TranslateTextAsync(
             eventArgs.Text,
