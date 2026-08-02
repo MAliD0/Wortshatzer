@@ -57,7 +57,8 @@ public static class BuiltInScraperProfiles
                 [
                     "main a[href*='/dictionary/german-english/']",
                     "a[href*='/dictionary/german-english/']"
-                ]));
+                ],
+                "https://dictionary.cambridge.org/spellcheck/german-english/?q={word}"));
 
     public static ScraperProfile VerbformenGerman { get; } =
         new(
