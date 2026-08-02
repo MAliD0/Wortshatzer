@@ -1,4 +1,5 @@
 using Avalonia.Input.Platform;
+using Avalonia.Media.Imaging;
 using Wortshatzer.Core.Ocr;
 
 namespace Wortshatzer.Services;
@@ -34,7 +35,9 @@ public sealed class ClipboardOcrCaptureService :
         }
 
         await using var stream = new MemoryStream();
-        bitmap.Save(stream);
+        bitmap.Save(
+            stream,
+            new PngBitmapEncoderOptions());
 
         return await _textRecognitionService.RecognizeAsync(
             new OcrImage(stream.ToArray(), "image/png"),
