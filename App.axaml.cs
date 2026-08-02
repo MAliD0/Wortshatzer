@@ -5,6 +5,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Wortshatzer.Core.Shortcuts;
 using Wortshatzer.Core.Translation;
+using Wortshatzer.Infrastructure.Dictionary;
 using Wortshatzer.Infrastructure.Ocr;
 using Wortshatzer.Infrastructure.Translation;
 using Wortshatzer.Services;
@@ -42,6 +43,11 @@ public partial class App : Application
                 new WindowsGlobalShortcutService();
             var popupPresenter = new TranslationPopupPresenter();
 
+            var applicationDataDirectory = Path.Combine(
+                Environment.GetFolderPath(
+                    Environment.SpecialFolder.LocalApplicationData),
+                "Wortshatzer");
+
             var ocrHttpClient = new HttpClient
             {
                 Timeout = TimeSpan.FromMinutes(2)
@@ -49,15 +55,12 @@ public partial class App : Application
             ocrHttpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
                 "Wortshatzer/0.1");
 
-            var ocrDataDirectory = Path.Combine(
-                Environment.GetFolderPath(
-                    Environment.SpecialFolder.LocalApplicationData),
-                "Wortshatzer",
-                "tessdata");
             var ocrLanguageDataManager =
                 new OcrLanguageDataManager(
                     ocrHttpClient,
-                    ocrDataDirectory);
+                    Path.Combine(
+                        applicationDataDirectory,
+                        "tessdata"));
             var textRecognitionService =
                 new TesseractTextRecognitionService(
                     ocrLanguageDataManager);
@@ -67,6 +70,25 @@ public partial class App : Application
                     textRecognitionService);
             var screenRegionCaptureService =
                 new WindowsScreenRegionCaptureService(mainWindow);
+
+            var dictionaryHttpClient = new HttpClient
+            {
+                Timeout = TimeSpan.FromSeconds(20)
+            };
+            dictionaryHttpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "Wortshatzer/0.1");
+            dictionaryHttpClient.DefaultRequestHeaders.AcceptLanguage.ParseAdd(
+                "en-US,en;q=0.8,de;q=0.7");
+
+            var dictionaryLookupService =
+                new HttpDictionaryLookupService(
+                    dictionaryHttpClient,
+                    new AngleSharpScraperEngine());
+            var scraperProfileStore =
+                new JsonScraperProfileStore(
+                    Path.Combine(
+                        applicationDataDirectory,
+                        "scraper-profiles.json"));
 
             var viewModel = new MainWindowViewModel(
                 translationService,
@@ -100,6 +122,39 @@ public partial class App : Application
                         eventArgs.Action));
             }
 
+            ScraperSettingsWindow? scraperSettingsWindow = null;
+
+            async void OnScraperSettingsRequested()
+            {
+                if (scraperSettingsWindow is not null)
+                {
+                    scraperSettingsWindow.Activate();
+                    return;
+                }
+
+                var settingsViewModel =
+                    new ScraperSettingsViewModel(
+                        scraperProfileStore,
+                        dictionaryLookupService,
+                        BuiltInScraperProfiles.All);
+                var window = new ScraperSettingsWindow
+                {
+                    DataContext = settingsViewModel
+                };
+
+                scraperSettingsWindow = window;
+
+                try
+                {
+                    await settingsViewModel.InitializeAsync();
+                    await window.ShowDialog(mainWindow);
+                }
+                finally
+                {
+                    scraperSettingsWindow = null;
+                }
+            }
+
             shortcutService.ShortcutPressed += OnShortcutPressed;
 
             var failedShortcuts = shortcutService.Start(shortcuts);
@@ -109,16 +164,21 @@ public partial class App : Application
                 failedShortcuts);
 
             viewModel.TranslationReady += popupPresenter.Show;
+            viewModel.ScraperSettingsRequested +=
+                OnScraperSettingsRequested;
             mainWindow.DataContext = viewModel;
 
             mainWindow.Closed += (_, _) =>
             {
                 shortcutService.ShortcutPressed -= OnShortcutPressed;
                 viewModel.TranslationReady -= popupPresenter.Show;
+                viewModel.ScraperSettingsRequested -=
+                    OnScraperSettingsRequested;
                 shortcutService.Dispose();
                 viewModel.Dispose();
                 popupPresenter.Dispose();
                 ocrHttpClient.Dispose();
+                dictionaryHttpClient.Dispose();
                 deepLHttpClient?.Dispose();
             };
 
