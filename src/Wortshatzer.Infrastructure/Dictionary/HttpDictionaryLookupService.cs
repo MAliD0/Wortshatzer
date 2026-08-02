@@ -169,8 +169,9 @@ public sealed class HttpDictionaryLookupService :
 
         var suggestion =
             await _suggestionExtractor
-                .ExtractFirstSuggestionAsync(
+                .ExtractClosestSuggestionAsync(
                     profile,
+                    originalWord,
                     suggestionPage.Html,
                     suggestionPage.SourceUri,
                     cancellationToken);
