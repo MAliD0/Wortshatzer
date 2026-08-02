@@ -18,6 +18,7 @@ Wortshatzer is an Avalonia desktop application that captures words, translates t
 - optional DeepL API translation for arbitrary supported text
 - runtime translation-method selector for DeepL, web scraping, and the offline demo
 - declarative dictionary scraper profiles with CSS selectors, fallback selectors, custom fields, and extraction limits
+- configurable misspelling recovery that chooses the closest safe suggestion from dictionary spellcheck pages
 - AngleSharp extraction engine with support for text, HTML, and attribute values
 - bounded HTTP dictionary lookup with a 12-hour in-memory cache
 - starter profiles for Cambridge German–English and Verbformen German
@@ -40,7 +41,7 @@ On Windows:
 - `Ctrl + Alt + Z` reads a short word or phrase from the clipboard. If there is no suitable text, it tries OCR on a clipboard image.
 - `Ctrl + Shift + O` opens the native Windows Snipping Tool. Select a word or short phrase; the new clipboard image is detected, recognized, and translated automatically. Press `Esc` to cancel.
 
-OCR uses the source language selected in the main window. Short OCR results are translated immediately and shown in the popup. Longer results are placed in the editor for correction.
+OCR uses the source language selected in the main window. Short OCR results are shown in the popup as soon as recognition finishes, then translation continues in the same popup. Longer results are placed in the editor for correction.
 
 The native snipping flow avoids the application's former GDI/BitBlt capture path, which could turn hardware-accelerated video surfaces black. Windows can still intentionally exclude DRM-protected content from screenshots.
 
@@ -99,10 +100,11 @@ The scraper engine uses profiles instead of hardcoded website logic. A profile d
 - first/all result behavior
 - required fields, duplicate removal, and result limits
 - custom user-defined fields
+- optional closest-word suggestion selectors and fallback selectors
 
-The HTTP lookup layer reuses one client, rejects oversized pages, converts network/status errors into user-safe dictionary errors, and caches successful results for 12 hours. The built-in Cambridge and Verbformen profiles are editable starting points; selectors are deliberately kept in profile data because websites can change.
+The HTTP lookup layer reuses one client, rejects oversized pages, converts network/status errors into user-safe dictionary errors, and caches successful results for 12 hours. If normal extraction fails and a profile enables closest-word recovery, the scraper reads candidate links from the spellcheck page, ranks them by edit distance from the entered word, follows the closest same-host HTTPS link once, and retries normal extraction. The built-in Cambridge German–English profile includes this stage. Cambridge and Verbformen profiles remain editable starting points because websites can change.
 
-Open **Dictionary settings** from the main window to create or clone a profile. Built-ins cannot be overwritten or deleted. Custom profiles are stored atomically under `%LOCALAPPDATA%\\Wortshatzer\\scraper-profiles.json`, and **Test profile** previews the current unsaved selectors against a real word. Cache keys include the complete profile configuration, so changing a selector always produces a fresh preview.
+Open **Dictionary settings** from the main window to create or clone a profile. Enable **Use closest-word fallback** and configure its primary and fallback CSS selectors when a dictionary has a spelling-suggestion page. Built-ins cannot be overwritten or deleted. Custom profiles are stored atomically under `%LOCALAPPDATA%\\Wortshatzer\\scraper-profiles.json`, and **Test profile** previews the current unsaved selectors against a real word. Cache keys include the complete profile configuration, so changing a selector always produces a fresh preview.
 
 Use **Use for language pair** to choose the active profile for its source and target languages. Selections are stored under `%LOCALAPPDATA%\\Wortshatzer\\active-scraper-profiles.json`. If no selection exists, Wortshatzer uses the first matching built-in. Translation is displayed immediately; dictionary details load independently and then appear in the main result. A still-visible capture popup expands when the details arrive.
 
