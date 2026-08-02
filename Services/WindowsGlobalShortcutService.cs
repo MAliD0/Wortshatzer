@@ -14,6 +14,7 @@ public sealed class WindowsGlobalShortcutService :
     private readonly object _sync = new();
     private Thread? _messageThread;
     private uint _messageThreadId;
+    private IReadOnlyList<GlobalShortcutAction> _startupFailures = [];
     private bool _isDisposed;
 
     public event EventHandler<GlobalShortcutPressedEventArgs>?
@@ -77,13 +78,10 @@ public sealed class WindowsGlobalShortcutService :
             }
 
             using var started = new ManualResetEventSlim();
-            IReadOnlyList<GlobalShortcutAction> failures = [];
+            _startupFailures = [];
 
             _messageThread = new Thread(
-                () =>
-                {
-                    failures = RunMessageLoop(requested, started);
-                })
+                () => RunMessageLoop(requested, started))
             {
                 IsBackground = true,
                 Name = "Wortshatzer global shortcuts"
@@ -98,7 +96,7 @@ public sealed class WindowsGlobalShortcutService :
                     "The global shortcut service did not start in time.");
             }
 
-            return failures;
+            return _startupFailures;
         }
     }
 
@@ -133,6 +131,7 @@ public sealed class WindowsGlobalShortcutService :
         {
             _messageThread = null;
             _messageThreadId = 0;
+            _startupFailures = [];
         }
     }
 
@@ -147,7 +146,7 @@ public sealed class WindowsGlobalShortcutService :
         _isDisposed = true;
     }
 
-    private IReadOnlyList<GlobalShortcutAction> RunMessageLoop(
+    private void RunMessageLoop(
         IReadOnlyList<GlobalShortcutRegistration> registrations,
         ManualResetEventSlim started)
     {
@@ -180,6 +179,7 @@ public sealed class WindowsGlobalShortcutService :
                 }
             }
 
+            _startupFailures = failures.ToArray();
             started.Set();
 
             while (GetMessage(
@@ -215,8 +215,6 @@ public sealed class WindowsGlobalShortcutService :
 
             started.Set();
         }
-
-        return failures;
     }
 
     private static uint ToNativeModifiers(
@@ -229,12 +227,14 @@ public sealed class WindowsGlobalShortcutService :
     {
         if (key is >= ShortcutKey.A and <= ShortcutKey.Z)
         {
-            return (uint)('A' + (key - ShortcutKey.A));
+            return (uint)(
+                'A' + ((int)key - (int)ShortcutKey.A));
         }
 
         if (key is >= ShortcutKey.F1 and <= ShortcutKey.F12)
         {
-            return 0x70u + (uint)(key - ShortcutKey.F1);
+            return 0x70u
+                + (uint)((int)key - (int)ShortcutKey.F1);
         }
 
         throw new InvalidEnumArgumentException(
