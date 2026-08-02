@@ -64,8 +64,9 @@ public sealed class HttpDictionaryLookupService :
 
         var normalizedWord = word.Trim();
         var sourceUri = profile.BuildSearchUri(normalizedWord);
-        var cacheKey =
-            $"{profile.Name}\n{sourceUri.AbsoluteUri}";
+        var cacheKey = BuildCacheKey(
+            profile,
+            sourceUri);
 
         if (TryGetCached(cacheKey, out var cached))
         {
@@ -157,6 +158,41 @@ public sealed class HttpDictionaryLookupService :
     public void ClearCache()
     {
         _cache.Clear();
+    }
+
+    private static string BuildCacheKey(
+        ScraperProfile profile,
+        Uri sourceUri)
+    {
+        var key = new StringBuilder();
+        key.AppendLine(profile.Name);
+        key.AppendLine(sourceUri.AbsoluteUri);
+        key.AppendLine(profile.EntrySelector ?? string.Empty);
+
+        foreach (var rule in profile.Fields)
+        {
+            key.Append((int)rule.Field);
+            key.Append('|');
+            key.Append(rule.OutputName);
+            key.Append('|');
+            key.Append(rule.Selector);
+            key.Append('|');
+            key.Append(string.Join("\u001F", rule.FallbackSelectors));
+            key.Append('|');
+            key.Append((int)rule.ValueSource);
+            key.Append('|');
+            key.Append(rule.AttributeName);
+            key.Append('|');
+            key.Append((int)rule.ResultMode);
+            key.Append('|');
+            key.Append(rule.IsRequired);
+            key.Append('|');
+            key.Append(rule.RemoveDuplicates);
+            key.Append('|');
+            key.AppendLine(rule.MaximumResults.ToString());
+        }
+
+        return key.ToString();
     }
 
     private bool TryGetCached(
