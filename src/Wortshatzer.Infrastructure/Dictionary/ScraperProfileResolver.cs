@@ -40,8 +40,8 @@ public sealed class ScraperProfileResolver :
         var customProfiles =
             await _customProfileStore.LoadAsync(
                 cancellationToken);
-        var availableProfiles = customProfiles
-            .Concat(_builtInProfiles)
+        var availableProfiles = _builtInProfiles
+            .Concat(customProfiles)
             .Where(profile =>
                 profile.SourceLanguageCode == source
                 && profile.TargetLanguageCode == target)
