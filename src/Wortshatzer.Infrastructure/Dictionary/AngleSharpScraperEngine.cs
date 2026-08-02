@@ -184,14 +184,14 @@ public sealed class AngleSharpScraperEngine :
                     continue;
                 }
 
-                var word =
-                    CollapseWhitespace(candidate.TextContent);
+                var word = Uri.UnescapeDataString(
+                    suggestionUri.Segments[^1])
+                    .Trim('/');
 
                 if (string.IsNullOrWhiteSpace(word))
                 {
-                    word = Uri.UnescapeDataString(
-                        suggestionUri.Segments[^1])
-                        .Trim('/');
+                    word =
+                        CollapseWhitespace(candidate.TextContent);
                 }
 
                 if (string.IsNullOrWhiteSpace(word)
