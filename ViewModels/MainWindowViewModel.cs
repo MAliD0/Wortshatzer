@@ -291,6 +291,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        PopupInputRequested?.Invoke(
+            normalizedText,
+            "OCR captured text. Translating…");
+
         ProcessCapturedText(
             normalizedText,
             TextCaptureSource.Ocr);
