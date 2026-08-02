@@ -9,4 +9,8 @@ public interface ITextCaptureService : IDisposable
     void Start();
 
     void Stop();
+
+    Task<bool> CaptureCurrentAsync(
+        TextCaptureSource source,
+        CancellationToken cancellationToken = default);
 }
