@@ -179,7 +179,10 @@ public sealed class AngleSharpScraperEngine :
                     || !string.Equals(
                         suggestionUri.Host,
                         pageUri.Host,
-                        StringComparison.OrdinalIgnoreCase))
+                        StringComparison.OrdinalIgnoreCase)
+                    || IsDictionaryRoot(
+                        profile,
+                        suggestionUri))
                 {
                     continue;
                 }
@@ -207,10 +210,6 @@ public sealed class AngleSharpScraperEngine :
                         suggestionUri));
             }
 
-            if (suggestions.Count > 0)
-            {
-                break;
-            }
         }
 
         return suggestions
@@ -219,6 +218,33 @@ public sealed class AngleSharpScraperEngine :
                 item.Word))
             .ThenBy(item => item.Word.Length)
             .FirstOrDefault();
+    }
+
+    private static bool IsDictionaryRoot(
+        ScraperProfile profile,
+        Uri candidateUri)
+    {
+        var rootUrl = profile.SearchUrlTemplate.Replace(
+            "{word}",
+            string.Empty,
+            StringComparison.Ordinal);
+
+        if (!Uri.TryCreate(
+                rootUrl,
+                UriKind.Absolute,
+                out var rootUri))
+        {
+            return false;
+        }
+
+        return string.Equals(
+                candidateUri.Host,
+                rootUri.Host,
+                StringComparison.OrdinalIgnoreCase)
+            && string.Equals(
+                candidateUri.AbsolutePath.TrimEnd('/'),
+                rootUri.AbsolutePath.TrimEnd('/'),
+                StringComparison.OrdinalIgnoreCase);
     }
 
     private static int CalculateEditDistance(
