@@ -55,6 +55,49 @@ public sealed class ClipboardCaptureService : ITextCaptureService
         _hasBaseline = false;
     }
 
+    public async Task<bool> CaptureCurrentAsync(
+        TextCaptureSource source,
+        CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_isDisposed, this);
+
+        if (!Enum.IsDefined(source))
+        {
+            throw new ArgumentOutOfRangeException(nameof(source));
+        }
+
+        if (_isReading)
+        {
+            return false;
+        }
+
+        _isReading = true;
+
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var clipboardText = await _clipboard.TryGetTextAsync();
+            cancellationToken.ThrowIfCancellationRequested();
+
+            _lastClipboardText = clipboardText;
+            _hasBaseline = true;
+
+            return PublishCapturedText(clipboardText, source);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            _isReading = false;
+        }
+    }
+
     public void Dispose()
     {
         if (_isDisposed)
@@ -96,13 +139,9 @@ public sealed class ClipboardCaptureService : ITextCaptureService
             }
 
             _lastClipboardText = clipboardText;
-
-            if (TryNormalizeCapturedText(clipboardText, out var normalizedText))
-            {
-                TextCaptured?.Invoke(
-                    this,
-                    new TextCapturedEventArgs(normalizedText));
-            }
+            PublishCapturedText(
+                clipboardText,
+                TextCaptureSource.ClipboardMonitor);
         }
         catch
         {
@@ -115,48 +154,21 @@ public sealed class ClipboardCaptureService : ITextCaptureService
         }
     }
 
-    private static bool TryNormalizeCapturedText(
-        string? clipboardText,
-        out string normalizedText)
+    private bool PublishCapturedText(
+        string? capturedText,
+        TextCaptureSource source)
     {
-        normalizedText = string.Empty;
-
-        if (string.IsNullOrWhiteSpace(clipboardText))
+        if (!CapturedTextNormalizer.TryNormalize(
+                capturedText,
+                out var normalizedText))
         {
             return false;
         }
 
-        var candidate = clipboardText.Trim();
+        TextCaptured?.Invoke(
+            this,
+            new TextCapturedEventArgs(normalizedText, source));
 
-        if (candidate.Length > 64
-            || candidate.Contains('\r')
-            || candidate.Contains('\n'))
-        {
-            return false;
-        }
-
-        candidate = candidate.Trim(
-            ' ', '\t', '.', ',', ';', ':', '!', '?',
-            '"', '\'', '“', '”', '„',
-            '(', ')', '[', ']', '{', '}');
-
-        if (string.IsNullOrWhiteSpace(candidate)
-            || !candidate.Any(char.IsLetter))
-        {
-            return false;
-        }
-
-        var parts = candidate.Split(
-            [' ', '\t'],
-            StringSplitOptions.RemoveEmptyEntries
-                | StringSplitOptions.TrimEntries);
-
-        if (parts.Length is < 1 or > 3)
-        {
-            return false;
-        }
-
-        normalizedText = string.Join(' ', parts);
         return true;
     }
 }
