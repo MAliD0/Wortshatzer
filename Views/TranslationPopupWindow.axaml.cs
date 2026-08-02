@@ -5,6 +5,8 @@ namespace Wortshatzer.Views;
 
 public partial class TranslationPopupWindow : Window
 {
+    public event Action? DismissRequested;
+
     public TranslationPopupWindow()
     {
         InitializeComponent();
@@ -14,6 +16,6 @@ public partial class TranslationPopupWindow : Window
         object? sender,
         RoutedEventArgs eventArgs)
     {
-        Hide();
+        DismissRequested?.Invoke();
     }
 }
