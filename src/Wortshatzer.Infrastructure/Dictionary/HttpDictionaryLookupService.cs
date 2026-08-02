@@ -92,29 +92,45 @@ public sealed class HttpDictionaryLookupService :
                 cancellationToken);
             DictionaryLookupResult result;
 
-            try
+            if (IsRedirectedSpellcheckPage(
+                    sourceUri,
+                    page.SourceUri))
             {
-                result = await _scraperEngine.ExtractAsync(
-                    profile,
-                    normalizedWord,
-                    page.Html,
-                    cancellationToken);
-            }
-            catch (DictionaryScrapingException)
-            {
-                var recovered =
+                result =
                     await TryClosestSuggestionAsync(
                         profile,
                         normalizedWord,
                         page,
-                        cancellationToken);
-
-                if (recovered is null)
+                        cancellationToken)
+                    ?? throw new DictionaryScrapingException(
+                        $"Dictionary '{profile.Name}' returned a spelling-suggestion page, but no safe suggestion could be read.");
+            }
+            else
+            {
+                try
                 {
-                    throw;
+                    result = await _scraperEngine.ExtractAsync(
+                        profile,
+                        normalizedWord,
+                        page.Html,
+                        cancellationToken);
                 }
+                catch (DictionaryScrapingException)
+                {
+                    var recovered =
+                        await TryClosestSuggestionAsync(
+                            profile,
+                            normalizedWord,
+                            page,
+                            cancellationToken);
 
-                result = recovered;
+                    if (recovered is null)
+                    {
+                        throw;
+                    }
+
+                    result = recovered;
+                }
             }
 
             _cache[cacheKey] = new CacheEntry(
@@ -152,6 +168,22 @@ public sealed class HttpDictionaryLookupService :
     public void ClearCache()
     {
         _cache.Clear();
+    }
+
+    private static bool IsRedirectedSpellcheckPage(
+        Uri requestedUri,
+        Uri finalUri)
+    {
+        if (requestedUri == finalUri)
+        {
+            return false;
+        }
+
+        return finalUri.Segments.Any(segment =>
+            string.Equals(
+                segment.Trim('/'),
+                "spellcheck",
+                StringComparison.OrdinalIgnoreCase));
     }
 
     private async Task<DictionaryLookupResult?>
