@@ -148,6 +148,16 @@ public partial class ScraperSettingsViewModel :
     private string _entrySelector = string.Empty;
 
     [ObservableProperty]
+    private bool _useClosestSuggestion;
+
+    [ObservableProperty]
+    private string _suggestionSelector = string.Empty;
+
+    [ObservableProperty]
+    private string _suggestionFallbackSelectorsText =
+        string.Empty;
+
+    [ObservableProperty]
     private string _testWord = "vielleicht";
 
     [ObservableProperty]
@@ -249,6 +259,9 @@ public partial class ScraperSettingsViewModel :
         SourceLanguageCode = "de";
         TargetLanguageCode = "en";
         EntrySelector = string.Empty;
+        UseClosestSuggestion = false;
+        SuggestionSelector = string.Empty;
+        SuggestionFallbackSelectorsText = string.Empty;
         Rules.Clear();
         AddRule();
         PreviewText =
@@ -442,13 +455,26 @@ public partial class ScraperSettingsViewModel :
             TestWord = "vielleicht";
         }
 
+        var suggestionFallbackSelectors =
+            SuggestionFallbackSelectorsText
+                .Split(
+                    ['\r', '\n'],
+                    StringSplitOptions.RemoveEmptyEntries
+                        | StringSplitOptions.TrimEntries);
+        var suggestionRule = UseClosestSuggestion
+            ? new ScraperSuggestionRule(
+                SuggestionSelector,
+                suggestionFallbackSelectors)
+            : null;
+
         return new ScraperProfile(
             Name,
             SearchUrlTemplate,
             SourceLanguageCode,
             TargetLanguageCode,
             Rules.Select(rule => rule.BuildRule()),
-            EntrySelector);
+            EntrySelector,
+            suggestionRule);
     }
 
     private void RefreshProfiles(string? selectedName = null)
@@ -487,6 +513,16 @@ public partial class ScraperSettingsViewModel :
         SourceLanguageCode = profile.SourceLanguageCode;
         TargetLanguageCode = profile.TargetLanguageCode;
         EntrySelector = profile.EntrySelector ?? string.Empty;
+        UseClosestSuggestion =
+            profile.SuggestionRule is not null;
+        SuggestionSelector =
+            profile.SuggestionRule?.Selector
+                ?? string.Empty;
+        SuggestionFallbackSelectorsText =
+            string.Join(
+                Environment.NewLine,
+                profile.SuggestionRule?.FallbackSelectors
+                    ?? []);
 
         Rules.Clear();
 
