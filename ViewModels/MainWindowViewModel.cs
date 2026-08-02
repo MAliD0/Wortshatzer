@@ -239,14 +239,15 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         CaptureStatus =
-            "Drag around a word or short phrase. Press Esc to cancel.";
+            "Windows Snipping Tool opened. Select a word or short phrase; press Esc to cancel.";
 
         var image =
             await _screenRegionCaptureService.CaptureRegionAsync();
 
         if (image is null)
         {
-            CaptureStatus = "Screen-region capture cancelled.";
+            CaptureStatus =
+                "Windows Snipping Tool capture was cancelled or timed out.";
             return;
         }
 
