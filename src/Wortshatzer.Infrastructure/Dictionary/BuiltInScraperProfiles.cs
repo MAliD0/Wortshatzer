@@ -14,7 +14,7 @@ public static class BuiltInScraperProfiles
                 new ScraperExtractionRule(
                     DictionaryField.Headword,
                     ".hw.dhw",
-                    ScraperResultMode: ScraperResultMode.First,
+                    resultMode: ScraperResultMode.First,
                     isRequired: true,
                     fallbackSelectors: [".di-title", "h1"]),
                 new ScraperExtractionRule(
@@ -63,12 +63,12 @@ public static class BuiltInScraperProfiles
                 new ScraperExtractionRule(
                     DictionaryField.Headword,
                     "h1",
-                    ScraperResultMode.First,
+                    resultMode: ScraperResultMode.First,
                     isRequired: true),
                 new ScraperExtractionRule(
                     DictionaryField.Conjugation,
                     "#stammformen",
-                    ScraperResultMode.First,
+                    resultMode: ScraperResultMode.First,
                     fallbackSelectors:
                     [
                         "[id*='stammform']",
