@@ -65,6 +65,25 @@ public partial class TranslationPopupViewModel :
             CanTranslate);
     }
 
+    public void PrepareInputCorrection(
+        string suggestedText,
+        string message)
+    {
+        ArgumentNullException.ThrowIfNull(suggestedText);
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+
+        InputText = suggestedText
+            .ReplaceLineEndings(" ")
+            .Trim();
+        SourceText = string.Empty;
+        TranslatedText = string.Empty;
+        Direction = "Review captured text";
+        StatusMessage = message.Trim();
+        HasTranslation = false;
+        HasError = false;
+        ResetDictionaryResult();
+    }
+
     public void ApplyTranslation(
         WordTranslation translation)
     {
