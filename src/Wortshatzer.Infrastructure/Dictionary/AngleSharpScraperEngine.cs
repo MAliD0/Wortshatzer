@@ -1,0 +1,243 @@
+using AngleSharp.Dom;
+using AngleSharp.Html.Parser;
+using Wortshatzer.Core.Dictionary;
+
+namespace Wortshatzer.Infrastructure.Dictionary;
+
+public sealed class AngleSharpScraperEngine :
+    IDictionaryScraperEngine
+{
+    private readonly HtmlParser _parser = new();
+
+    public async Task<DictionaryLookupResult> ExtractAsync(
+        ScraperProfile profile,
+        string word,
+        string html,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        ArgumentException.ThrowIfNullOrWhiteSpace(word);
+        ArgumentException.ThrowIfNullOrWhiteSpace(html);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        IDocument document;
+
+        try
+        {
+            document = await _parser.ParseDocumentAsync(
+                html,
+                cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            throw new DictionaryScrapingException(
+                "The downloaded HTML could not be parsed.",
+                exception);
+        }
+
+        var sourceUri = profile.BuildSearchUri(word);
+        var scope = ResolveEntryScope(
+            document,
+            profile.EntrySelector);
+
+        var extractedFields =
+            new Dictionary<string, List<string>>(
+                StringComparer.OrdinalIgnoreCase);
+
+        foreach (var rule in profile.Fields)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var values = ExtractRule(
+                scope,
+                rule,
+                sourceUri);
+
+            if (values.Count == 0 && rule.IsRequired)
+            {
+                throw new DictionaryScrapingException(
+                    $"Required field '{rule.OutputName}' was not found by profile '{profile.Name}'.");
+            }
+
+            if (values.Count == 0)
+            {
+                continue;
+            }
+
+            if (!extractedFields.TryGetValue(
+                    rule.OutputName,
+                    out var existingValues))
+            {
+                existingValues = [];
+                extractedFields.Add(
+                    rule.OutputName,
+                    existingValues);
+            }
+
+            existingValues.AddRange(values);
+
+            if (rule.RemoveDuplicates)
+            {
+                var distinct = existingValues
+                    .Distinct(StringComparer.Ordinal)
+                    .Take(rule.MaximumResults)
+                    .ToArray();
+
+                existingValues.Clear();
+                existingValues.AddRange(distinct);
+            }
+        }
+
+        var readOnlyFields = extractedFields.ToDictionary(
+            item => item.Key,
+            item => (IReadOnlyList<string>)item.Value.ToArray(),
+            StringComparer.OrdinalIgnoreCase);
+
+        return new DictionaryLookupResult(
+            word,
+            profile.Name,
+            sourceUri,
+            readOnlyFields);
+    }
+
+    private static IElement ResolveEntryScope(
+        IDocument document,
+        string? entrySelector)
+    {
+        var documentRoot = document.DocumentElement
+            ?? throw new DictionaryScrapingException(
+                "The downloaded page has no document element.");
+
+        if (entrySelector is null)
+        {
+            return documentRoot;
+        }
+
+        try
+        {
+            return document.QuerySelector(entrySelector)
+                ?? throw new DictionaryScrapingException(
+                    $"Entry selector '{entrySelector}' did not match the page.");
+        }
+        catch (DictionaryScrapingException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            throw new DictionaryScrapingException(
+                $"Entry selector '{entrySelector}' is invalid.",
+                exception);
+        }
+    }
+
+    private static IReadOnlyList<string> ExtractRule(
+        IElement scope,
+        ScraperExtractionRule rule,
+        Uri sourceUri)
+    {
+        IHtmlCollection<IElement>? matchedElements = null;
+
+        foreach (var selector in rule.EnumerateSelectors())
+        {
+            try
+            {
+                var candidates = scope.QuerySelectorAll(selector);
+
+                if (candidates.Length > 0)
+                {
+                    matchedElements = candidates;
+                    break;
+                }
+            }
+            catch (Exception exception)
+            {
+                throw new DictionaryScrapingException(
+                    $"Selector '{selector}' for field '{rule.OutputName}' is invalid.",
+                    exception);
+            }
+        }
+
+        if (matchedElements is null)
+        {
+            return [];
+        }
+
+        var maximumResults = rule.ResultMode == ScraperResultMode.First
+            ? 1
+            : rule.MaximumResults;
+        var results = new List<string>();
+
+        foreach (var element in matchedElements.Take(maximumResults))
+        {
+            var value = ReadValue(
+                element,
+                rule,
+                sourceUri);
+
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                results.Add(value);
+            }
+        }
+
+        if (rule.RemoveDuplicates)
+        {
+            return results
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        return results;
+    }
+
+    private static string? ReadValue(
+        IElement element,
+        ScraperExtractionRule rule,
+        Uri sourceUri)
+    {
+        var value = rule.ValueSource switch
+        {
+            ScraperValueSource.Text =>
+                CollapseWhitespace(element.TextContent),
+            ScraperValueSource.Html =>
+                element.InnerHtml.Trim(),
+            ScraperValueSource.Attribute =>
+                element.GetAttribute(rule.AttributeName!),
+            _ => null
+        };
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        value = value.Trim();
+
+        if (rule.ValueSource == ScraperValueSource.Attribute
+            && Uri.TryCreate(
+                sourceUri,
+                value,
+                out var absoluteUri))
+        {
+            return absoluteUri.ToString();
+        }
+
+        return value;
+    }
+
+    private static string CollapseWhitespace(string value)
+    {
+        return string.Join(
+            ' ',
+            value.Split(
+                (char[]?)null,
+                StringSplitOptions.RemoveEmptyEntries
+                    | StringSplitOptions.TrimEntries));
+    }
+}
