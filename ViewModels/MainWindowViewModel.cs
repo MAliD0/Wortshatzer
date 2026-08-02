@@ -346,12 +346,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                 ? "Captured text translated."
                 : "Translation ready.";
 
-            TranslationCompleted?.Invoke(translation);
-
             if (showPopup)
             {
                 TranslationReady?.Invoke(translation);
             }
+
+            TranslationCompleted?.Invoke(translation);
         }
         catch (OperationCanceledException)
         {
