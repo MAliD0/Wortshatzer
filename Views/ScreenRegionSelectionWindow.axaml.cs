@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Layout;
 using Avalonia.Platform;
 using Avalonia.Threading;
 
@@ -9,21 +8,14 @@ namespace Wortshatzer.Views;
 
 public partial class ScreenRegionSelectionWindow : Window
 {
-    private readonly Screen _screen;
     private readonly TaskCompletionSource<PixelRect?> _completion =
         new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private Screen? _screen;
     private Point? _dragStart;
 
-    public ScreenRegionSelectionWindow(Screen screen)
+    public ScreenRegionSelectionWindow()
     {
-        ArgumentNullException.ThrowIfNull(screen);
-
-        _screen = screen;
         InitializeComponent();
-
-        Position = screen.Bounds.Position;
-        Width = screen.Bounds.Width / screen.Scaling;
-        Height = screen.Bounds.Height / screen.Scaling;
 
         PointerPressed += OnPointerPressed;
         PointerMoved += OnPointerMoved;
@@ -32,9 +24,26 @@ public partial class ScreenRegionSelectionWindow : Window
         Closed += (_, _) => _completion.TrySetResult(null);
     }
 
+    public ScreenRegionSelectionWindow(Screen screen)
+        : this()
+    {
+        ArgumentNullException.ThrowIfNull(screen);
+
+        _screen = screen;
+        Position = screen.Bounds.Position;
+        Width = screen.Bounds.Width / screen.Scaling;
+        Height = screen.Bounds.Height / screen.Scaling;
+    }
+
     public async Task<PixelRect?> SelectAsync(
         CancellationToken cancellationToken = default)
     {
+        if (_screen is null)
+        {
+            throw new InvalidOperationException(
+                "A target screen is required before showing the OCR selection window.");
+        }
+
         cancellationToken.ThrowIfCancellationRequested();
 
         using var registration = cancellationToken.Register(
@@ -90,6 +99,9 @@ public partial class ScreenRegionSelectionWindow : Window
             return;
         }
 
+        var screen = _screen
+            ?? throw new InvalidOperationException(
+                "The OCR selection window has no target screen.");
         var end = Clamp(eventArgs.GetPosition(this));
         UpdateSelection(end);
         eventArgs.Pointer.Capture(null);
@@ -108,10 +120,10 @@ public partial class ScreenRegionSelectionWindow : Window
             return;
         }
 
-        var scaling = _screen.Scaling;
+        var scaling = screen.Scaling;
         var region = new PixelRect(
-            _screen.Bounds.X + (int)Math.Round(left * scaling),
-            _screen.Bounds.Y + (int)Math.Round(top * scaling),
+            screen.Bounds.X + (int)Math.Round(left * scaling),
+            screen.Bounds.Y + (int)Math.Round(top * scaling),
             Math.Max(1, (int)Math.Round(width * scaling)),
             Math.Max(1, (int)Math.Round(height * scaling)));
 
