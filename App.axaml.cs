@@ -2,6 +2,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
+using Wortshatzer.Core.Shortcuts;
 using Wortshatzer.Core.Translation;
 using Wortshatzer.Infrastructure.Translation;
 using Wortshatzer.Services;
@@ -35,17 +37,47 @@ public partial class App : Application
                 CreateTranslationService(out var deepLHttpClient);
             var captureService =
                 new ClipboardCaptureService(clipboard);
+            var shortcutService =
+                new WindowsGlobalShortcutService();
             var popupPresenter = new TranslationPopupPresenter();
             var viewModel = new MainWindowViewModel(
                 translationService,
                 captureService);
+
+            var clipboardShortcut = new GlobalShortcutRegistration(
+                GlobalShortcutAction.CaptureClipboard,
+                new GlobalShortcutGesture(
+                    ShortcutModifiers.Control
+                        | ShortcutModifiers.Alt,
+                    ShortcutKey.Z));
+
+            void OnShortcutPressed(
+                object? sender,
+                GlobalShortcutPressedEventArgs eventArgs)
+            {
+                Dispatcher.UIThread.Post(
+                    () => _ = viewModel.HandleGlobalShortcutAsync(
+                        eventArgs.Action));
+            }
+
+            shortcutService.ShortcutPressed += OnShortcutPressed;
+
+            var failedShortcuts = shortcutService.Start(
+                [clipboardShortcut]);
+
+            viewModel.SetShortcutStatus(
+                clipboardShortcut.Gesture,
+                !failedShortcuts.Contains(
+                    GlobalShortcutAction.CaptureClipboard));
 
             viewModel.TranslationReady += popupPresenter.Show;
             mainWindow.DataContext = viewModel;
 
             mainWindow.Closed += (_, _) =>
             {
+                shortcutService.ShortcutPressed -= OnShortcutPressed;
                 viewModel.TranslationReady -= popupPresenter.Show;
+                shortcutService.Dispose();
                 viewModel.Dispose();
                 popupPresenter.Dispose();
                 deepLHttpClient?.Dispose();
