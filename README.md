@@ -21,6 +21,8 @@ Wortshatzer is an Avalonia desktop application that captures words, translates t
 - starter profiles for Cambridge German–English and Verbformen German
 - visual scraper settings editor with protected built-ins, custom profile cloning, and field-level selector configuration
 - atomic JSON persistence and live test-word preview for custom scraper profiles
+- active dictionary profile selection per source/target language pair
+- asynchronous dictionary enrichment in the main result and floating popup
 
 ## Run the application
 
@@ -91,6 +93,8 @@ The scraper engine uses profiles instead of hardcoded website logic. A profile d
 The HTTP lookup layer reuses one client, rejects oversized pages, converts network/status errors into user-safe dictionary errors, and caches successful results for 12 hours. The built-in Cambridge and Verbformen profiles are editable starting points; selectors are deliberately kept in profile data because websites can change.
 
 Open **Dictionary settings** from the main window to create or clone a profile. Built-ins cannot be overwritten or deleted. Custom profiles are stored atomically under `%LOCALAPPDATA%\\Wortshatzer\\scraper-profiles.json`, and **Test profile** previews the current unsaved selectors against a real word. Cache keys include the complete profile configuration, so changing a selector always produces a fresh preview.
+
+Use **Use for language pair** to choose the active profile for its source and target languages. Selections are stored under `%LOCALAPPDATA%\\Wortshatzer\\active-scraper-profiles.json`. If no selection exists, Wortshatzer uses the first matching built-in. Translation is displayed immediately; dictionary details load independently and then appear in the main result. A still-visible capture popup expands when the details arrive.
 
 ## Architecture
 
