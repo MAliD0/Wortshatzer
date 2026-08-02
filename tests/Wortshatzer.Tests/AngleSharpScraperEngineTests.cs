@@ -126,7 +126,7 @@ public sealed class AngleSharpScraperEngineTests
                 </li>
                 <li>
                   <a href="/dictionary/german-english/vielleicht">
-                    vielleicht
+                    vielleicht adjective — maybe, perhaps
                   </a>
                 </li>
                 <li>
