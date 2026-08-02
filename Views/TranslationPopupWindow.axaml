@@ -54,7 +54,7 @@
                 <TextBox
                     x:Name="InputTextBox"
                     Text="{Binding InputText, Mode=TwoWay}"
-                    Watermark="Enter a word or short phrase"
+                    PlaceholderText="Enter a word or short phrase"
                     Padding="11,8"
                     FontSize="15"/>
                 <Button
