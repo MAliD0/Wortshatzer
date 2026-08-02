@@ -100,12 +100,37 @@ public partial class App : Application
                     activeScraperProfileStore,
                     BuiltInScraperProfiles.All);
 
+            var translationMethods =
+                new List<TranslationMethodOption>
+                {
+                    new(
+                        translationService is DeepLTranslationService
+                            ? "deepl"
+                            : "demo",
+                        translationService),
+                    new(
+                        "web-scraper",
+                        new ScraperTranslationService(
+                            scraperProfileResolver,
+                            dictionaryLookupService))
+                };
+
+            if (translationService is DeepLTranslationService)
+            {
+                translationMethods.Add(
+                    new TranslationMethodOption(
+                        "demo",
+                        new InMemoryTranslationService()));
+            }
+
             var viewModel = new MainWindowViewModel(
                 translationService,
                 captureService,
                 clipboardOcrCaptureService,
                 screenRegionCaptureService,
                 textRecognitionService);
+            viewModel.ConfigureTranslationMethods(
+                translationMethods);
             viewModel.ConfigureDictionaryIntegration(
                 dictionaryLookupService,
                 scraperProfileResolver);
