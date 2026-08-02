@@ -121,7 +121,7 @@
                                 FontWeight="SemiBold"/>
                             <TextBox
                                 Text="{Binding Name, Mode=TwoWay}"
-                                Watermark="My dictionary"/>
+                                PlaceholderText="My dictionary"/>
                         </StackPanel>
 
                         <StackPanel
@@ -132,7 +132,7 @@
                                 FontWeight="SemiBold"/>
                             <TextBox
                                 Text="{Binding SourceLanguageCode, Mode=TwoWay}"
-                                Watermark="de"/>
+                                PlaceholderText="de"/>
                         </StackPanel>
 
                         <StackPanel
@@ -143,7 +143,7 @@
                                 FontWeight="SemiBold"/>
                             <TextBox
                                 Text="{Binding TargetLanguageCode, Mode=TwoWay}"
-                                Watermark="en"/>
+                                PlaceholderText="en"/>
                         </StackPanel>
 
                         <StackPanel
@@ -155,7 +155,7 @@
                                 FontWeight="SemiBold"/>
                             <TextBox
                                 Text="{Binding SearchUrlTemplate, Mode=TwoWay}"
-                                Watermark="https://dictionary.example/{word}"/>
+                                PlaceholderText="https://dictionary.example/{word}"/>
                         </StackPanel>
 
                         <StackPanel
@@ -167,7 +167,7 @@
                                 FontWeight="SemiBold"/>
                             <TextBox
                                 Text="{Binding EntrySelector, Mode=TwoWay}"
-                                Watermark=".entry"/>
+                                PlaceholderText=".entry"/>
                         </StackPanel>
                     </Grid>
 
@@ -233,7 +233,7 @@
                                                         Foreground="#667085"/>
                                                     <TextBox
                                                         Text="{Binding Selector, Mode=TwoWay}"
-                                                        Watermark=".translation"/>
+                                                        PlaceholderText=".translation"/>
                                                 </StackPanel>
 
                                                 <StackPanel
@@ -259,7 +259,7 @@
                                                         Text="{Binding FallbackSelectorsText, Mode=TwoWay}"
                                                         AcceptsReturn="True"
                                                         MinHeight="56"
-                                                        Watermark=".old-selector"/>
+                                                        PlaceholderText=".old-selector"/>
                                                 </StackPanel>
 
                                                 <StackPanel
@@ -275,7 +275,7 @@
                                                         SelectedItem="{Binding ValueSource, Mode=TwoWay}"/>
                                                     <TextBox
                                                         Text="{Binding AttributeName, Mode=TwoWay}"
-                                                        Watermark="Attribute name"/>
+                                                        PlaceholderText="Attribute name"/>
                                                 </StackPanel>
 
                                                 <Grid
@@ -296,7 +296,7 @@
                                                         Grid.Column="2"
                                                         Text="{Binding CustomFieldName, Mode=TwoWay}"
                                                         VerticalAlignment="Bottom"
-                                                        Watermark="Custom field name"/>
+                                                        PlaceholderText="Custom field name"/>
                                                     
                                                     <StackPanel
                                                         Grid.Column="4"
@@ -350,7 +350,7 @@
                         ColumnDefinitions="*,10,Auto">
                         <TextBox
                             Text="{Binding TestWord, Mode=TwoWay}"
-                            Watermark="vielleicht"/>
+                            PlaceholderText="vielleicht"/>
                         <Button
                             Grid.Column="2"
                             Content="Test profile"
