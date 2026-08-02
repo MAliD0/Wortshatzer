@@ -92,9 +92,7 @@ public sealed class HttpDictionaryLookupService :
                 cancellationToken);
             DictionaryLookupResult result;
 
-            if (IsRedirectedSpellcheckPage(
-                    sourceUri,
-                    page.SourceUri))
+            if (IsSpellcheckPage(page.SourceUri))
             {
                 result =
                     await TryClosestSuggestionAsync(
@@ -115,7 +113,7 @@ public sealed class HttpDictionaryLookupService :
                         page.Html,
                         cancellationToken);
                 }
-                catch (DictionaryScrapingException)
+                catch (DictionaryScrapingException initialException)
                 {
                     var recovered =
                         await TryClosestSuggestionAsync(
@@ -126,7 +124,9 @@ public sealed class HttpDictionaryLookupService :
 
                     if (recovered is null)
                     {
-                        throw;
+                        throw new DictionaryScrapingException(
+                            $"Dictionary '{profile.Name}' did not contain an entry or a readable spelling suggestion for '{normalizedWord}'.",
+                            initialException);
                     }
 
                     result = recovered;
@@ -170,16 +170,9 @@ public sealed class HttpDictionaryLookupService :
         _cache.Clear();
     }
 
-    private static bool IsRedirectedSpellcheckPage(
-        Uri requestedUri,
-        Uri finalUri)
+    private static bool IsSpellcheckPage(Uri pageUri)
     {
-        if (requestedUri == finalUri)
-        {
-            return false;
-        }
-
-        return finalUri.Segments.Any(segment =>
+        return pageUri.Segments.Any(segment =>
             string.Equals(
                 segment.Trim('/'),
                 "spellcheck",
@@ -234,12 +227,29 @@ public sealed class HttpDictionaryLookupService :
             profile,
             suggestion.SourceUri,
             cancellationToken);
-        var extracted =
-            await _scraperEngine.ExtractAsync(
+
+        if (IsSpellcheckPage(entryPage.SourceUri))
+        {
+            throw new DictionaryScrapingException(
+                $"Suggested word '{suggestion.Word}' redirected back to a spelling-suggestion page.");
+        }
+
+        DictionaryLookupResult extracted;
+
+        try
+        {
+            extracted = await _scraperEngine.ExtractAsync(
                 profile,
                 suggestion.Word,
                 entryPage.Html,
                 cancellationToken);
+        }
+        catch (DictionaryScrapingException exception)
+        {
+            throw new DictionaryScrapingException(
+                $"Suggested word '{suggestion.Word}' was found, but its entry page '{entryPage.SourceUri}' did not match profile '{profile.Name}'.",
+                exception);
+        }
 
         return new DictionaryLookupResult(
             originalWord,
