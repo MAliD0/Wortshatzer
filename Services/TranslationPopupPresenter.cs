@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Threading;
+using Wortshatzer.Core.Dictionary;
 using Wortshatzer.Core.Words;
 using Wortshatzer.ViewModels;
 using Wortshatzer.Views;
@@ -21,7 +22,9 @@ public sealed class TranslationPopupPresenter : IDisposable
         ArgumentNullException.ThrowIfNull(translation);
 
         _window ??= new TranslationPopupWindow();
-        _window.DataContext = new TranslationPopupViewModel(translation);
+        _window.Height = 190;
+        _window.DataContext =
+            new TranslationPopupViewModel(translation);
 
         if (!_window.IsVisible)
         {
@@ -29,14 +32,37 @@ public sealed class TranslationPopupPresenter : IDisposable
         }
 
         PositionNearWorkingAreaCorner(_window);
+        RestartDismissTimer(_window);
+    }
 
-        _dismissCancellation?.Cancel();
-        _dismissCancellation?.Dispose();
-        _dismissCancellation = new CancellationTokenSource();
+    public void ShowDictionary(
+        DictionaryLookupResult result)
+    {
+        ObjectDisposedException.ThrowIf(_isDisposed, this);
+        ArgumentNullException.ThrowIfNull(result);
 
-        _ = HideAfterDelayAsync(
-            _window,
-            _dismissCancellation.Token);
+        if (_window is null
+            || !_window.IsVisible
+            || _window.DataContext
+                is not TranslationPopupViewModel viewModel
+            || !string.Equals(
+                viewModel.SourceText,
+                result.Query,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        viewModel.ApplyDictionaryResult(result);
+
+        if (!viewModel.HasDictionaryDetails)
+        {
+            return;
+        }
+
+        _window.Height = 330;
+        PositionNearWorkingAreaCorner(_window);
+        RestartDismissTimer(_window);
     }
 
     public void Dispose()
@@ -51,6 +77,18 @@ public sealed class TranslationPopupPresenter : IDisposable
         _window?.Close();
         _window = null;
         _isDisposed = true;
+    }
+
+    private void RestartDismissTimer(
+        TranslationPopupWindow window)
+    {
+        _dismissCancellation?.Cancel();
+        _dismissCancellation?.Dispose();
+        _dismissCancellation = new CancellationTokenSource();
+
+        _ = HideAfterDelayAsync(
+            window,
+            _dismissCancellation.Token);
     }
 
     private static void PositionNearWorkingAreaCorner(
