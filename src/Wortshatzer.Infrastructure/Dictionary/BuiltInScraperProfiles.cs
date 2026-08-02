@@ -51,7 +51,13 @@ public static class BuiltInScraperProfiles
                     attributeName: "src",
                     fallbackSelectors: ["audio source", "audio"])
             ],
-            ".entry-body");
+            ".entry-body",
+            new ScraperSuggestionRule(
+                ".hul-u a[href*='/dictionary/german-english/']",
+                [
+                    "main a[href*='/dictionary/german-english/']",
+                    "a[href*='/dictionary/german-english/']"
+                ]));
 
     public static ScraperProfile VerbformenGerman { get; } =
         new(
