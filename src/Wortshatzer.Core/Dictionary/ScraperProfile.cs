@@ -136,6 +136,51 @@ public sealed record ScraperExtractionRule
     }
 }
 
+public sealed record ScraperSuggestionRule
+{
+    public string Selector { get; }
+
+    public IReadOnlyList<string> FallbackSelectors { get; }
+
+    public ScraperSuggestionRule(
+        string selector,
+        IEnumerable<string>? fallbackSelectors = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(selector);
+
+        Selector = selector.Trim();
+        FallbackSelectors = (fallbackSelectors ?? [])
+            .Select(value => value?.Trim())
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Cast<string>()
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+    }
+
+    public IEnumerable<string> EnumerateSelectors()
+    {
+        yield return Selector;
+
+        foreach (var fallbackSelector in FallbackSelectors)
+        {
+            yield return fallbackSelector;
+        }
+    }
+}
+
+public sealed record DictionarySuggestion(
+    string Word,
+    Uri SourceUri);
+
+public interface IDictionarySuggestionExtractor
+{
+    Task<DictionarySuggestion?> ExtractFirstSuggestionAsync(
+        ScraperProfile profile,
+        string html,
+        Uri pageUri,
+        CancellationToken cancellationToken = default);
+}
+
 public sealed record ScraperProfile
 {
     public string Name { get; }
@@ -148,6 +193,8 @@ public sealed record ScraperProfile
 
     public string? EntrySelector { get; }
 
+    public ScraperSuggestionRule? SuggestionRule { get; }
+
     public IReadOnlyList<ScraperExtractionRule> Fields { get; }
 
     public ScraperProfile(
@@ -156,7 +203,8 @@ public sealed record ScraperProfile
         string sourceLanguageCode,
         string targetLanguageCode,
         IEnumerable<ScraperExtractionRule> fields,
-        string? entrySelector = null)
+        string? entrySelector = null,
+        ScraperSuggestionRule? suggestionRule = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentException.ThrowIfNullOrWhiteSpace(searchUrlTemplate);
@@ -207,6 +255,7 @@ public sealed record ScraperProfile
         EntrySelector = string.IsNullOrWhiteSpace(entrySelector)
             ? null
             : entrySelector.Trim();
+        SuggestionRule = suggestionRule;
         Fields = fieldArray;
     }
 
