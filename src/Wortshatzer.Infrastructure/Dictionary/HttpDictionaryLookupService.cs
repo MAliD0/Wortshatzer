@@ -12,6 +12,8 @@ public sealed class HttpDictionaryLookupService :
 
     private readonly HttpClient _httpClient;
     private readonly IDictionaryScraperEngine _scraperEngine;
+    private readonly IDictionarySuggestionExtractor?
+        _suggestionExtractor;
     private readonly TimeSpan _cacheDuration;
     private readonly int _maximumResponseBytes;
     private readonly Func<DateTimeOffset> _utcNow;
@@ -49,6 +51,8 @@ public sealed class HttpDictionaryLookupService :
 
         _httpClient = httpClient;
         _scraperEngine = scraperEngine;
+        _suggestionExtractor =
+            scraperEngine as IDictionarySuggestionExtractor;
         _cacheDuration = configuredDuration;
         _maximumResponseBytes = maximumResponseBytes;
         _utcNow = utcNow ?? (() => DateTimeOffset.UtcNow);
@@ -82,46 +86,36 @@ public sealed class HttpDictionaryLookupService :
                 return cached;
             }
 
-            using var request = new HttpRequestMessage(
-                HttpMethod.Get,
-                sourceUri);
-            request.Headers.Accept.ParseAdd(
-                "text/html,application/xhtml+xml");
-
-            using var response = await _httpClient.SendAsync(
-                request,
-                HttpCompletionOption.ResponseHeadersRead,
-                cancellationToken);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new DictionaryScrapingException(
-                    $"Dictionary '{profile.Name}' returned HTTP {(int)response.StatusCode} ({response.StatusCode}).");
-            }
-
-            var contentLength =
-                response.Content.Headers.ContentLength;
-
-            if (contentLength.HasValue
-                && contentLength.Value > _maximumResponseBytes)
-            {
-                throw ResponseTooLarge(profile);
-            }
-
-            var bytes = await response.Content.ReadAsByteArrayAsync(
-                cancellationToken);
-
-            if (bytes.Length > _maximumResponseBytes)
-            {
-                throw ResponseTooLarge(profile);
-            }
-
-            var html = DecodeHtml(response, bytes);
-            var result = await _scraperEngine.ExtractAsync(
+            var page = await FetchPageAsync(
                 profile,
-                normalizedWord,
-                html,
+                sourceUri,
                 cancellationToken);
+            DictionaryLookupResult result;
+
+            try
+            {
+                result = await _scraperEngine.ExtractAsync(
+                    profile,
+                    normalizedWord,
+                    page.Html,
+                    cancellationToken);
+            }
+            catch (DictionaryScrapingException)
+            {
+                var recovered =
+                    await TryClosestSuggestionAsync(
+                        profile,
+                        normalizedWord,
+                        page,
+                        cancellationToken);
+
+                if (recovered is null)
+                {
+                    throw;
+                }
+
+                result = recovered;
+            }
 
             _cache[cacheKey] = new CacheEntry(
                 result,
@@ -160,6 +154,97 @@ public sealed class HttpDictionaryLookupService :
         _cache.Clear();
     }
 
+    private async Task<DictionaryLookupResult?>
+        TryClosestSuggestionAsync(
+            ScraperProfile profile,
+            string originalWord,
+            FetchedPage suggestionPage,
+            CancellationToken cancellationToken)
+    {
+        if (profile.SuggestionRule is null
+            || _suggestionExtractor is null)
+        {
+            return null;
+        }
+
+        var suggestion =
+            await _suggestionExtractor
+                .ExtractFirstSuggestionAsync(
+                    profile,
+                    suggestionPage.Html,
+                    suggestionPage.SourceUri,
+                    cancellationToken);
+
+        if (suggestion is null
+            || suggestion.SourceUri
+                == suggestionPage.SourceUri)
+        {
+            return null;
+        }
+
+        var entryPage = await FetchPageAsync(
+            profile,
+            suggestion.SourceUri,
+            cancellationToken);
+        var extracted =
+            await _scraperEngine.ExtractAsync(
+                profile,
+                suggestion.Word,
+                entryPage.Html,
+                cancellationToken);
+
+        return new DictionaryLookupResult(
+            originalWord,
+            extracted.SourceName,
+            entryPage.SourceUri,
+            extracted.Fields);
+    }
+
+    private async Task<FetchedPage> FetchPageAsync(
+        ScraperProfile profile,
+        Uri sourceUri,
+        CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            sourceUri);
+        request.Headers.Accept.ParseAdd(
+            "text/html,application/xhtml+xml");
+
+        using var response = await _httpClient.SendAsync(
+            request,
+            HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new DictionaryScrapingException(
+                $"Dictionary '{profile.Name}' returned HTTP {(int)response.StatusCode} ({response.StatusCode}).");
+        }
+
+        var contentLength =
+            response.Content.Headers.ContentLength;
+
+        if (contentLength.HasValue
+            && contentLength.Value > _maximumResponseBytes)
+        {
+            throw ResponseTooLarge(profile);
+        }
+
+        var bytes = await response.Content.ReadAsByteArrayAsync(
+            cancellationToken);
+
+        if (bytes.Length > _maximumResponseBytes)
+        {
+            throw ResponseTooLarge(profile);
+        }
+
+        return new FetchedPage(
+            response.RequestMessage?.RequestUri
+                ?? sourceUri,
+            DecodeHtml(response, bytes));
+    }
+
     private static string BuildCacheKey(
         ScraperProfile profile,
         Uri sourceUri)
@@ -168,6 +253,13 @@ public sealed class HttpDictionaryLookupService :
         key.AppendLine(profile.Name);
         key.AppendLine(sourceUri.AbsoluteUri);
         key.AppendLine(profile.EntrySelector ?? string.Empty);
+        key.AppendLine(
+            profile.SuggestionRule?.Selector
+                ?? string.Empty);
+        key.AppendLine(string.Join(
+            "\u001F",
+            profile.SuggestionRule?.FallbackSelectors
+                ?? []));
 
         foreach (var rule in profile.Fields)
         {
@@ -243,6 +335,10 @@ public sealed class HttpDictionaryLookupService :
         return new DictionaryScrapingException(
             $"Dictionary '{profile.Name}' returned a page larger than the configured safety limit.");
     }
+
+    private sealed record FetchedPage(
+        Uri SourceUri,
+        string Html);
 
     private sealed record CacheEntry(
         DictionaryLookupResult Result,
