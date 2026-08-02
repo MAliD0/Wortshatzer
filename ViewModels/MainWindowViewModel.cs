@@ -14,7 +14,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly ITranslationService _translationService;
     private readonly ITextCaptureService _textCaptureService;
     private readonly IClipboardOcrCaptureService _clipboardOcrCaptureService;
+    private readonly IScreenRegionCaptureService _screenRegionCaptureService;
+    private readonly ITextRecognitionService _textRecognitionService;
     private CancellationTokenSource? _capturedTranslationCancellation;
+    private bool _isCaptureInProgress;
     private bool _isDisposed;
 
     [ObservableProperty]
@@ -43,7 +46,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     private string _shortcutStatus =
-        "Global clipboard shortcut is unavailable.";
+        "Global shortcuts are unavailable.";
 
     [ObservableProperty]
     private bool _isClipboardCaptureEnabled;
@@ -72,15 +75,21 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public MainWindowViewModel(
         ITranslationService translationService,
         ITextCaptureService textCaptureService,
-        IClipboardOcrCaptureService clipboardOcrCaptureService)
+        IClipboardOcrCaptureService clipboardOcrCaptureService,
+        IScreenRegionCaptureService screenRegionCaptureService,
+        ITextRecognitionService textRecognitionService)
     {
         ArgumentNullException.ThrowIfNull(translationService);
         ArgumentNullException.ThrowIfNull(textCaptureService);
         ArgumentNullException.ThrowIfNull(clipboardOcrCaptureService);
+        ArgumentNullException.ThrowIfNull(screenRegionCaptureService);
+        ArgumentNullException.ThrowIfNull(textRecognitionService);
 
         _translationService = translationService;
         _textCaptureService = textCaptureService;
         _clipboardOcrCaptureService = clipboardOcrCaptureService;
+        _screenRegionCaptureService = screenRegionCaptureService;
+        _textRecognitionService = textRecognitionService;
         _textCaptureService.TextCaptured += OnTextCaptured;
 
         Languages =
@@ -101,14 +110,18 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     }
 
     public void SetShortcutStatus(
-        GlobalShortcutGesture gesture,
-        bool isActive)
+        IEnumerable<GlobalShortcutRegistration> registrations,
+        IReadOnlyCollection<GlobalShortcutAction> failedActions)
     {
-        ArgumentNullException.ThrowIfNull(gesture);
+        ArgumentNullException.ThrowIfNull(registrations);
+        ArgumentNullException.ThrowIfNull(failedActions);
 
-        ShortcutStatus = isActive
-            ? $"Global shortcut {gesture} captures clipboard text or images."
-            : $"Could not register {gesture}. It may be used by another application.";
+        var descriptions = registrations.Select(registration =>
+            failedActions.Contains(registration.Action)
+                ? $"{registration.Gesture} unavailable"
+                : $"{registration.Gesture} active");
+
+        ShortcutStatus = string.Join(" • ", descriptions);
     }
 
     public async Task HandleGlobalShortcutAsync(
@@ -119,80 +132,45 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        if (action != GlobalShortcutAction.CaptureClipboard)
+        if (action == GlobalShortcutAction.SaveLatestTranslation)
         {
-            CaptureStatus = action switch
-            {
-                GlobalShortcutAction.CaptureOcrRegion =>
-                    "OCR region capture is not connected yet.",
-                GlobalShortcutAction.SaveLatestTranslation =>
-                    "Saving translations will be added with vocabulary storage.",
-                _ => CaptureStatus
-            };
-
+            CaptureStatus =
+                "Saving translations will be added with vocabulary storage.";
             return;
         }
 
-        CaptureStatus = "Reading clipboard text or image…";
+        if (_isCaptureInProgress)
+        {
+            CaptureStatus =
+                "Finish or cancel the current capture first.";
+            return;
+        }
+
+        _isCaptureInProgress = true;
 
         try
         {
-            var capturedText =
-                await _textCaptureService.CaptureCurrentAsync(
-                    TextCaptureSource.GlobalShortcut);
-
-            if (capturedText)
+            switch (action)
             {
-                return;
+                case GlobalShortcutAction.CaptureClipboard:
+                    await CaptureClipboardAsync();
+                    break;
+                case GlobalShortcutAction.CaptureOcrRegion:
+                    await CaptureScreenRegionAsync();
+                    break;
             }
-
-            var sourceLanguage = SelectedSourceLanguage;
-
-            if (sourceLanguage is null)
-            {
-                CaptureStatus =
-                    "Choose a source language before running OCR.";
-                return;
-            }
-
-            CaptureStatus =
-                $"Recognizing clipboard image as {sourceLanguage.DisplayName}…";
-
-            var ocrResult =
-                await _clipboardOcrCaptureService
-                    .RecognizeCurrentImageAsync(sourceLanguage.Code);
-
-            if (ocrResult is null)
-            {
-                CaptureStatus =
-                    "The clipboard does not contain short text or an image.";
-                return;
-            }
-
-            var singleLineText =
-                ocrResult.Text.ReplaceLineEndings(" ");
-
-            if (!CapturedTextNormalizer.TryNormalize(
-                    singleLineText,
-                    out var normalizedText))
-            {
-                CapturedText = singleLineText;
-                CaptureStatus =
-                    "OCR found text, but it must be corrected to a word or phrase of up to three words.";
-                return;
-            }
-
-            ProcessCapturedText(
-                normalizedText,
-                TextCaptureSource.Ocr);
         }
         catch (OperationCanceledException)
         {
-            CaptureStatus = "Clipboard capture was cancelled.";
+            CaptureStatus = "Capture was cancelled.";
         }
         catch (OcrException exception)
         {
             CaptureStatus = exception.Message;
+        }
+        finally
+        {
+            _isCaptureInProgress = false;
         }
     }
 
@@ -208,6 +186,98 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _textCaptureService.TextCaptured -= OnTextCaptured;
         _textCaptureService.Dispose();
         _isDisposed = true;
+    }
+
+    private async Task CaptureClipboardAsync()
+    {
+        CaptureStatus = "Reading clipboard text or image…";
+
+        var capturedText =
+            await _textCaptureService.CaptureCurrentAsync(
+                TextCaptureSource.GlobalShortcut);
+
+        if (capturedText)
+        {
+            return;
+        }
+
+        var sourceLanguage = SelectedSourceLanguage;
+
+        if (sourceLanguage is null)
+        {
+            CaptureStatus =
+                "Choose a source language before running OCR.";
+            return;
+        }
+
+        CaptureStatus =
+            $"Recognizing clipboard image as {sourceLanguage.DisplayName}…";
+
+        var ocrResult =
+            await _clipboardOcrCaptureService
+                .RecognizeCurrentImageAsync(sourceLanguage.Code);
+
+        if (ocrResult is null)
+        {
+            CaptureStatus =
+                "The clipboard does not contain short text or an image.";
+            return;
+        }
+
+        ProcessOcrResult(ocrResult);
+    }
+
+    private async Task CaptureScreenRegionAsync()
+    {
+        var sourceLanguage = SelectedSourceLanguage;
+
+        if (sourceLanguage is null)
+        {
+            CaptureStatus =
+                "Choose a source language before running OCR.";
+            return;
+        }
+
+        CaptureStatus =
+            "Drag around a word or short phrase. Press Esc to cancel.";
+
+        var image =
+            await _screenRegionCaptureService.CaptureRegionAsync();
+
+        if (image is null)
+        {
+            CaptureStatus = "Screen-region capture cancelled.";
+            return;
+        }
+
+        CaptureStatus =
+            $"Recognizing selected region as {sourceLanguage.DisplayName}…";
+
+        var ocrResult = await _textRecognitionService.RecognizeAsync(
+            image,
+            sourceLanguage.Code);
+
+        ProcessOcrResult(ocrResult);
+    }
+
+    private void ProcessOcrResult(OcrResult ocrResult)
+    {
+        var singleLineText =
+            ocrResult.Text.ReplaceLineEndings(" ");
+
+        if (!CapturedTextNormalizer.TryNormalize(
+                singleLineText,
+                out var normalizedText))
+        {
+            CapturedText = singleLineText;
+            CaptureStatus =
+                "OCR found text, but it must be corrected to a word or phrase of up to three words.";
+            return;
+        }
+
+        ProcessCapturedText(
+            normalizedText,
+            TextCaptureSource.Ocr);
     }
 
     private bool CanTranslate()
