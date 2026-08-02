@@ -13,7 +13,7 @@ Wortshatzer is an Avalonia desktop application that captures words, translates t
 - Windows Snipping Tool region selection followed by OCR
 - offline Tesseract OCR for German, English, Polish, and Russian
 - floating translation popup that does not intentionally take focus
-- optional always-visible popup with its own quick-translation input
+- draggable, optionally always-visible popup with its own quick-translation input
 - in-memory demo dictionary when no online provider is configured
 - optional DeepL API translation for arbitrary supported text
 - runtime translation-method selector for DeepL, web scraping, and the offline demo
@@ -43,6 +43,8 @@ On Windows:
 OCR uses the source language selected in the main window. Short OCR results are translated immediately and shown in the popup. Longer results are placed in the editor for correction.
 
 The native snipping flow avoids the application's former GDI/BitBlt capture path, which could turn hardware-accelerated video surfaces black. Windows can still intentionally exclude DRM-protected content from screenshots.
+
+If OCR finds no readable text, the popup stays open with a focused empty field for manual entry. If OCR returns text that is not a valid short word or phrase, the recognized text is prefilled and selected for correction. Drag the popup by its **Wortshatzer** header; its chosen position is preserved for the rest of the session.
 
 Enable **Keep translation popup open** in the main window to pin the popup near the working-area corner. The pinned popup can translate a word or short phrase directly; press Enter or select **Translate**. It reuses the source language, target language, and translation method selected in the main window. Closing the pinned popup turns the option off.
 
