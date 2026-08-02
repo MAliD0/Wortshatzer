@@ -149,6 +149,16 @@ public sealed class JsonScraperProfileStore :
             SourceLanguageCode = profile.SourceLanguageCode,
             TargetLanguageCode = profile.TargetLanguageCode,
             EntrySelector = profile.EntrySelector,
+            Suggestion = profile.SuggestionRule is null
+                ? null
+                : new SuggestionDocument
+                {
+                    Selector =
+                        profile.SuggestionRule.Selector,
+                    FallbackSelectors =
+                        profile.SuggestionRule
+                            .FallbackSelectors.ToList()
+                },
             Fields = profile.Fields
                 .Select(rule => new RuleDocument
                 {
@@ -191,7 +201,12 @@ public sealed class JsonScraperProfileStore :
                     rule.AttributeName,
                     rule.CustomFieldName,
                     rule.FallbackSelectors)),
-            profile.EntrySelector);
+            profile.EntrySelector,
+            profile.Suggestion is null
+                ? null
+                : new ScraperSuggestionRule(
+                    profile.Suggestion.Selector,
+                    profile.Suggestion.FallbackSelectors));
     }
 
     private static void TryDelete(string path)
@@ -231,7 +246,16 @@ public sealed class JsonScraperProfileStore :
 
         public string? EntrySelector { get; set; }
 
+        public SuggestionDocument? Suggestion { get; set; }
+
         public List<RuleDocument> Fields { get; set; } = [];
+    }
+
+    private sealed class SuggestionDocument
+    {
+        public string Selector { get; set; } = string.Empty;
+
+        public List<string> FallbackSelectors { get; set; } = [];
     }
 
     private sealed class RuleDocument
