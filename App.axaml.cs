@@ -89,6 +89,16 @@ public partial class App : Application
                     Path.Combine(
                         applicationDataDirectory,
                         "scraper-profiles.json"));
+            var activeScraperProfileStore =
+                new JsonActiveScraperProfileStore(
+                    Path.Combine(
+                        applicationDataDirectory,
+                        "active-scraper-profiles.json"));
+            var scraperProfileResolver =
+                new ScraperProfileResolver(
+                    scraperProfileStore,
+                    activeScraperProfileStore,
+                    BuiltInScraperProfiles.All);
 
             var viewModel = new MainWindowViewModel(
                 translationService,
@@ -96,6 +106,9 @@ public partial class App : Application
                 clipboardOcrCaptureService,
                 screenRegionCaptureService,
                 textRecognitionService);
+            viewModel.ConfigureDictionaryIntegration(
+                dictionaryLookupService,
+                scraperProfileResolver);
 
             GlobalShortcutRegistration[] shortcuts =
             [
@@ -137,6 +150,8 @@ public partial class App : Application
                         scraperProfileStore,
                         dictionaryLookupService,
                         BuiltInScraperProfiles.All);
+                settingsViewModel.ConfigureActiveProfileStore(
+                    activeScraperProfileStore);
                 var window = new ScraperSettingsWindow
                 {
                     DataContext = settingsViewModel
@@ -164,6 +179,8 @@ public partial class App : Application
                 failedShortcuts);
 
             viewModel.TranslationReady += popupPresenter.Show;
+            viewModel.DictionaryResultReady +=
+                popupPresenter.ShowDictionary;
             viewModel.ScraperSettingsRequested +=
                 OnScraperSettingsRequested;
             mainWindow.DataContext = viewModel;
@@ -172,9 +189,12 @@ public partial class App : Application
             {
                 shortcutService.ShortcutPressed -= OnShortcutPressed;
                 viewModel.TranslationReady -= popupPresenter.Show;
+                viewModel.DictionaryResultReady -=
+                    popupPresenter.ShowDictionary;
                 viewModel.ScraperSettingsRequested -=
                     OnScraperSettingsRequested;
                 shortcutService.Dispose();
+                viewModel.DisposeDictionaryIntegration();
                 viewModel.Dispose();
                 popupPresenter.Dispose();
                 ocrHttpClient.Dispose();
