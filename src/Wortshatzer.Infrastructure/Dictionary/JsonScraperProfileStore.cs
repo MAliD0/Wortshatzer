@@ -155,6 +155,8 @@ public sealed class JsonScraperProfileStore :
                 {
                     Selector =
                         profile.SuggestionRule.Selector,
+                    SearchUrlTemplate =
+                        profile.SuggestionRule.SearchUrlTemplate,
                     FallbackSelectors =
                         profile.SuggestionRule
                             .FallbackSelectors.ToList()
@@ -206,7 +208,8 @@ public sealed class JsonScraperProfileStore :
                 ? null
                 : new ScraperSuggestionRule(
                     profile.Suggestion.Selector,
-                    profile.Suggestion.FallbackSelectors));
+                    profile.Suggestion.FallbackSelectors,
+                    profile.Suggestion.SearchUrlTemplate));
     }
 
     private static void TryDelete(string path)
@@ -254,6 +257,8 @@ public sealed class JsonScraperProfileStore :
     private sealed class SuggestionDocument
     {
         public string Selector { get; set; } = string.Empty;
+
+        public string? SearchUrlTemplate { get; set; }
 
         public List<string> FallbackSelectors { get; set; } = [];
     }
