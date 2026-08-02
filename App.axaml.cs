@@ -216,6 +216,8 @@ public partial class App : Application
                 popupPresenter.ShowDictionary;
             viewModel.PopupAlwaysVisibleChanged +=
                 popupPresenter.SetAlwaysVisible;
+            viewModel.PopupInputRequested +=
+                popupPresenter.ShowInputCorrection;
             popupPresenter.AlwaysVisibleDisableRequested +=
                 OnAlwaysVisibleDisableRequested;
             viewModel.ScraperSettingsRequested +=
@@ -230,6 +232,8 @@ public partial class App : Application
                     popupPresenter.ShowDictionary;
                 viewModel.PopupAlwaysVisibleChanged -=
                     popupPresenter.SetAlwaysVisible;
+                viewModel.PopupInputRequested -=
+                    popupPresenter.ShowInputCorrection;
                 popupPresenter.AlwaysVisibleDisableRequested -=
                     OnAlwaysVisibleDisableRequested;
                 viewModel.ScraperSettingsRequested -=
