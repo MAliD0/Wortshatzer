@@ -23,7 +23,9 @@
         CornerRadius="16">
         <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
             <Grid ColumnDefinitions="*,Auto">
-                <StackPanel Spacing="2">
+                <StackPanel
+                    Spacing="2"
+                    PointerPressed="DragArea_OnPointerPressed">
                     <TextBlock
                         Text="Wortshatzer"
                         FontSize="13"
@@ -50,6 +52,7 @@
                 Margin="0,14,0,0"
                 ColumnDefinitions="*,10,Auto">
                 <TextBox
+                    x:Name="InputTextBox"
                     Text="{Binding InputText, Mode=TwoWay}"
                     Watermark="Enter a word or short phrase"
                     Padding="11,8"
