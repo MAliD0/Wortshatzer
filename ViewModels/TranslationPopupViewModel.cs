@@ -70,6 +70,11 @@ public partial class TranslationPopupViewModel :
     {
         ArgumentNullException.ThrowIfNull(translation);
 
+        var isNewResult = !string.Equals(
+            SourceText,
+            translation.CapturedWord.Text,
+            StringComparison.OrdinalIgnoreCase);
+
         SourceText = translation.CapturedWord.Text;
         InputText = translation.CapturedWord.Text;
         TranslatedText = translation.TranslatedText;
@@ -79,7 +84,11 @@ public partial class TranslationPopupViewModel :
         StatusMessage = "Translation ready.";
         HasTranslation = true;
         HasError = false;
-        ResetDictionaryResult();
+
+        if (isNewResult)
+        {
+            ResetDictionaryResult();
+        }
     }
 
     public void ApplyDictionaryResult(
