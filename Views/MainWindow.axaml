@@ -252,6 +252,30 @@
                                         Foreground="White"/>
                                 </StackPanel>
                             </Border>
+
+                            <ProgressBar
+                                IsVisible="{Binding IsDictionaryLoading}"
+                                IsIndeterminate="True"
+                                Height="3"/>
+
+                            <TextBlock
+                                Text="{Binding DictionaryStatus}"
+                                TextWrapping="Wrap"
+                                FontSize="12"
+                                Foreground="#AEB9CD"/>
+
+                            <Border
+                                IsVisible="{Binding HasDictionaryDetails}"
+                                Padding="14"
+                                Background="#222D42"
+                                CornerRadius="12">
+                                <ScrollViewer MaxHeight="150">
+                                    <TextBlock
+                                        Text="{Binding DictionaryDetailsText}"
+                                        TextWrapping="Wrap"
+                                        Foreground="#E6EAF2"/>
+                                </ScrollViewer>
+                            </Border>
                         </StackPanel>
 
                         <StackPanel
