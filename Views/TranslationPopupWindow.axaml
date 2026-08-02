@@ -21,7 +21,7 @@
         BorderBrush="#3A465C"
         BorderThickness="1"
         CornerRadius="16">
-        <Grid RowDefinitions="Auto,*">
+        <Grid RowDefinitions="Auto,Auto,*">
             <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Spacing="2">
                     <TextBlock
@@ -75,6 +75,27 @@
                     FontWeight="Bold"
                     Foreground="White"/>
             </Grid>
+
+            <Border
+                Grid.Row="2"
+                Margin="0,18,0,0"
+                Padding="12"
+                IsVisible="{Binding HasDictionaryDetails}"
+                Background="#222D42"
+                CornerRadius="10">
+                <StackPanel Spacing="6">
+                    <TextBlock
+                        Text="{Binding DictionarySource}"
+                        FontSize="11"
+                        FontWeight="SemiBold"
+                        Foreground="#8EA0BC"/>
+                    <TextBlock
+                        Text="{Binding DictionaryText}"
+                        TextWrapping="Wrap"
+                        MaxHeight="110"
+                        Foreground="#E6EAF2"/>
+                </StackPanel>
+            </Border>
         </Grid>
     </Border>
 </Window>
