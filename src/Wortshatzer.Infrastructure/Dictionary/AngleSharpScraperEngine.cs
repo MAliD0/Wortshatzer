@@ -187,9 +187,12 @@ public sealed class AngleSharpScraperEngine :
                     continue;
                 }
 
-                var word = Uri.UnescapeDataString(
-                    suggestionUri.Segments[^1])
-                    .Trim('/');
+                var word = ReadQueryValue(
+                        suggestionUri,
+                        "q")
+                    ?? Uri.UnescapeDataString(
+                        suggestionUri.Segments[^1])
+                        .Trim('/');
 
                 if (string.IsNullOrWhiteSpace(word))
                 {
@@ -218,6 +221,40 @@ public sealed class AngleSharpScraperEngine :
                 item.Word))
             .ThenBy(item => item.Word.Length)
             .FirstOrDefault();
+    }
+
+    private static string? ReadQueryValue(
+        Uri uri,
+        string name)
+    {
+        foreach (var item in uri.Query
+                     .TrimStart('?')
+                     .Split(
+                         '&',
+                         StringSplitOptions.RemoveEmptyEntries))
+        {
+            var parts = item.Split('=', 2);
+            var key = Uri.UnescapeDataString(parts[0]);
+
+            if (!string.Equals(
+                    key,
+                    name,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var value = parts.Length == 2
+                ? Uri.UnescapeDataString(
+                    parts[1].Replace('+', ' '))
+                : string.Empty;
+
+            return string.IsNullOrWhiteSpace(value)
+                ? null
+                : value.Trim();
+        }
+
+        return null;
     }
 
     private static bool IsDictionaryRoot(
