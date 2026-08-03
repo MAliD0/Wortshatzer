@@ -211,36 +211,59 @@ public sealed class HttpDictionaryLookupServiceTests
         var handler = new StubHandler(request =>
         {
             var path = request.RequestUri!.AbsolutePath;
-            var html = path switch
-            {
-                "/spellcheck/de-en/" =>
-                    """
-                    <main>
-                      <article class="entry">
-                        <h1>erreichen</h1>
-                        <span class="translation">reach</span>
-                      </article>
-                      <ul class="suggestions">
-                        <li>
-                          <a href="/dictionary/de-en/strategisch">
-                            strategisch
-                          </a>
-                        </li>
-                      </ul>
-                    </main>
-                    """,
-                "/dictionary/de-en/strategisch" =>
-                    "<main><h1>strategisch</h1><span class='translation'>strategic</span></main>",
-                _ => "<main><p>No matching entry.</p></main>"
-            };
+            HttpResponseMessage response;
 
-            return new HttpResponseMessage(HttpStatusCode.OK)
+            if (path == "/spellcheck/de-en/")
             {
-                Content = new StringContent(
-                    html,
-                    Encoding.UTF8,
-                    "text/html")
-            };
+                response = new HttpResponseMessage(
+                    HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        """
+                        <main>
+                          <div class="lbt lp-5 lpl-20">
+                            <a href="https://dictionary.test/search/de-en/direct/?q=strategisch">
+                              strategisch
+                            </a>
+                          </div>
+                          <div class="lbt lp-5 lpl-20">
+                            <a href="https://dictionary.test/search/de-en/direct/?q=Strategie">
+                              Strategie
+                            </a>
+                          </div>
+                        </main>
+                        """,
+                        Encoding.UTF8,
+                        "text/html")
+                };
+            }
+            else if (path == "/search/de-en/direct/")
+            {
+                response = new HttpResponseMessage(
+                    HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        "<main><h1>strategisch</h1><span class='translation'>strategic</span></main>",
+                        Encoding.UTF8,
+                        "text/html"),
+                    RequestMessage = new HttpRequestMessage(
+                        HttpMethod.Get,
+                        "https://dictionary.test/dictionary/de-en/strategisch")
+                };
+            }
+            else
+            {
+                response = new HttpResponseMessage(
+                    HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        "<main><p>No matching entry.</p></main>",
+                        Encoding.UTF8,
+                        "text/html")
+                };
+            }
+
+            return response;
         });
         using var httpClient = new HttpClient(handler);
         var profile = new ScraperProfile(
@@ -261,7 +284,7 @@ public sealed class HttpDictionaryLookupServiceTests
             ],
             "main",
             new ScraperSuggestionRule(
-                ".suggestions a",
+                ".lbt.lp-5.lpl-20 a[href*='/search/de-en/direct/']",
                 searchUrlTemplate:
                     "https://dictionary.test/spellcheck/de-en/?q={word}"));
         var service = new HttpDictionaryLookupService(
@@ -281,9 +304,9 @@ public sealed class HttpDictionaryLookupServiceTests
         Assert.Equal(
             ["strategic"],
             result.GetValues(DictionaryField.Translation));
-        Assert.DoesNotContain(
-            "erreichen",
-            result.GetValues(DictionaryField.Headword));
+        Assert.Equal(
+            "https://dictionary.test/dictionary/de-en/strategisch",
+            result.SourceUri.AbsoluteUri);
     }
 
     [Fact]
