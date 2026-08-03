@@ -416,6 +416,9 @@ public sealed class HttpDictionaryLookupServiceTests
             field => field.Field == DictionaryField.Translation);
         Assert.NotNull(cambridge.SuggestionRule);
         Assert.Equal(
+            ".lbt.lp-5.lpl-20 a[href*='/search/german-english/direct/']",
+            cambridge.SuggestionRule.Selector);
+        Assert.Equal(
             "https://dictionary.cambridge.org/spellcheck/german-english/?q=vielleicht",
             cambridge.SuggestionRule
                 .BuildSearchUri("vielleicht")!
