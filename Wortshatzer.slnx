@@ -3,5 +3,8 @@
     <Project Path="src/Wortshatzer.Core/Wortshatzer.Core.csproj" />
     <Project Path="src/Wortshatzer.Infrastructure/Wortshatzer.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Wortshatzer.Tests/Wortshatzer.Tests.csproj" />
+  </Folder>
   <Project Path="Wortshatzer.csproj" />
 </Solution>
