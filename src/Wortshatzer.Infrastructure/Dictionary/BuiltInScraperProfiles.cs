@@ -53,10 +53,9 @@ public static class BuiltInScraperProfiles
             ],
             ".entry-body",
             new ScraperSuggestionRule(
-                ".hul-u a[href*='/dictionary/german-english/']",
+                ".lbt.lp-5.lpl-20 a[href*='/search/german-english/direct/']",
                 [
-                    "main a[href*='/dictionary/german-english/']",
-                    "a[href*='/dictionary/german-english/']"
+                    ".lbt.lp-5.lpl-20 a[href]"
                 ],
                 "https://dictionary.cambridge.org/spellcheck/german-english/?q={word}"));
 
