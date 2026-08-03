@@ -216,4 +216,51 @@ public sealed class AngleSharpScraperEngineTests
             suggestion.SourceUri.AbsoluteUri);
     }
 
+    [Fact]
+    public async Task ExtractClosestSuggestionAsync_ReadsCambridgeSearchQuery()
+    {
+        const string suggestionHtml =
+            """
+            <div class="lbt lp-5 lpl-20">
+              <a href="https://dictionary.test/search/german-english/direct/?q=strategisch">
+                strategisch
+              </a>
+            </div>
+            <div class="lbt lp-5 lpl-20">
+              <a href="https://dictionary.test/search/german-english/direct/?q=Strategie">
+                Strategie
+              </a>
+            </div>
+            """;
+        var profile = new ScraperProfile(
+            "Test dictionary",
+            "https://dictionary.test/dictionary/german-english/{word}",
+            "de",
+            "en",
+            [
+                new ScraperExtractionRule(
+                    DictionaryField.Translation,
+                    ".translation",
+                    isRequired: true)
+            ],
+            suggestionRule: new ScraperSuggestionRule(
+                ".lbt.lp-5.lpl-20 a"));
+        var engine = new AngleSharpScraperEngine();
+
+        var suggestion =
+            await engine.ExtractClosestSuggestionAsync(
+                profile,
+                "strategische",
+                suggestionHtml,
+                new Uri(
+                    "https://dictionary.test/spellcheck/german-english/?q=strategische"),
+                TestContext.Current.CancellationToken);
+
+        Assert.NotNull(suggestion);
+        Assert.Equal("strategisch", suggestion.Word);
+        Assert.Equal(
+            "https://dictionary.test/search/german-english/direct/?q=strategisch",
+            suggestion.SourceUri.AbsoluteUri);
+    }
+
 }
